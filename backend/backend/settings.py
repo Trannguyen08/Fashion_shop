@@ -49,6 +49,7 @@ REST_FRAMEWORK = {
     ),
 }
 
+AUTH_USER_MODEL = 'accounts.Account'
 
 from datetime import timedelta
 
@@ -117,16 +118,14 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'fashion-db',
-        'USER': 'root',
-        'PASSWORD': '081105',
-        'HOST': 'localhost',
-        'PORT': '3306',                        # Cổng MySQL
-        'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"
-        }
+        'NAME': 'fashion_shop',
+        'USER': 'user',
+        'PASSWORD': 'user123',
+        'HOST': '127.0.0.1',  # phải trùng tên service trong docker-compose
+        'PORT': '3306',
     }
 }
+
 
 
 # Password validation
