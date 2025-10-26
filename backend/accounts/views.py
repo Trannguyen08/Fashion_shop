@@ -14,7 +14,7 @@ def register(request):
         email = data.get("email")
         phone = data.get("phone")
 
-        if Account.objects.filter(email=email).exists() or Account.objects.filter(phone=phone).exists():
+        if Account.objects.filter(email=email).exists() | Account.objects.filter(phone=phone).exists():
             return JsonResponse({"error": "Số điện thoại hoặc email đã tồn tại"}, status=400)
         user = Account.objects.create_user(full_name=full_name, password=password, email=email, phone=phone)
         return JsonResponse({"message": "Đăng ký thành công"})
@@ -24,10 +24,10 @@ def register(request):
 @csrf_exempt
 def login_view(request):
     if request.method == "POST":
-        data = json.loads(request.body)
+        data = json.loads(request.body.decode('utf-8'))
         username = data.get("username")
         password = data.get("password")
-        user = Account.objects.filter(Q(username=username) or Q(username=username)).first()
+        user = Account.objects.filter(Q(phone=username) | Q(email=username)).first()
 
         if user is None:
             return JsonResponse({'error': 'Số điện thoại hoặc email không tồn tại'}, status=400)

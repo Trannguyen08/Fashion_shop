@@ -1,0 +1,112 @@
+/* src/Login.module.css */
+
+/* ------------------------------------- */
+/* 1. TOÀN BỘ TRANG VÀ NỀN */
+/* ------------------------------------- */
+
+.loginPageBackground {
+    /* Đảm bảo ảnh nền responsive */
+    background-image: url('https://theme.hstatic.net/1000344185/1001270599/14/slideshow_1.jpg?v=445'); 
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    object-fit: cover;
+    min-height: 100vh;
+    /* Các lớp d-flex align-items-center justify-content-center đã được xử lý trong JSX */
+}
+
+.blurOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    
+    /* Hiệu ứng làm mờ */
+    filter: blur(5px); /* Điều chỉnh giá trị (ví dụ: 3px, 8px) để thay đổi độ mờ */
+    
+    /* Đảm bảo lớp phủ nằm dưới form nhưng trên ảnh nền */
+    z-index: -10; 
+    
+    /* Kế thừa ảnh nền từ cha */
+    background-image: inherit; 
+    background-size: cover;
+    background-position: center;
+}
+
+/* ------------------------------------- */
+/* 2. THẺ FORM CHÍNH (THAY CHO loginCard) */
+/* ------------------------------------- */
+
+.loginCard {
+    /* Màu nền hơi trong suốt */
+    background-color: rgba(255, 255, 255, 0.95); 
+    border-radius: 15px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    max-width: 450px; 
+    width: 100%;
+    margin: auto; 
+    padding: 10rem !important;
+}
+
+/* ------------------------------------- */
+/* 3. CÁC PHẦN TỬ PHỤ */
+/* ------------------------------------- */
+
+.passwordToggleIcon {
+    /* Căn chỉnh icon con mắt bên trong input */
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: #6c757d;
+}
+
+.forgotPasswordLink,
+.createAccountLink {
+    /* Tùy chỉnh màu sắc và hiệu ứng cho liên kết */
+    color: #007bff;
+    font-weight: 500;
+}
+
+.forgotPasswordLink:hover,
+.createAccountLink:hover {
+    color: #0056b3;
+    text-decoration: underline !important;
+}
+
+/* ------------------------------------- */
+/* 4. RESPONSIVE (Giữ nguyên) */
+/* ------------------------------------- */
+
+
+@media (max-width: 768px) {
+    .inputContainer {
+        width: 70%;
+    }
+    
+    /* Chữ nhỏ hơn */
+    .mobileLabel {
+        font-size: 0.85rem; /* Giảm kích thước label */
+    }
+    .mobileInput {
+        font-size: 0.9rem; /* Giảm kích thước chữ trong input */
+        padding: 0.375rem 0.75rem; /* Giảm padding của input */
+    }
+    /* Điều chỉnh tiêu đề */
+    .loginCard h2 {
+        font-size: 1.5rem !important;
+    }
+    .loginCard {
+        padding: 4rem !important; 
+    }
+}
+@media (min-width: 768px) {
+    .loginCard {
+        padding: 4rem !important; 
+    }
+    /* Giới hạn input chỉ còn 70% trên desktop/tablet */
+    .inputContainer {
+        width: 70%; 
+    }
+}
