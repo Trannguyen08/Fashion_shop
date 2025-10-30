@@ -1,119 +1,129 @@
-import React, { useState } from 'react';
-import { Container, Row, Col } from 'react-bootstrap';
-import styles from './Login.module.css'; 
-import { Link } from 'react-router-dom';
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import styles from "./Register.module.css";
 
 export default function Register() {
-    // ------------------- 1. TRẠNG THÁI (STATE) -------------------
-    const [name, setName] = useState('');
-    const [phone, setPhone] = useState('');
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-    // ------------------- 2. XỬ LÝ SUBMIT -------------------
-    const handleSubmit = (event) => {
-        event.preventDefault();
-        // Xử lý logic đăng ký tại đây (gọi API)
-        console.log('Name:', name);
-        console.log('Phone:', phone);
-        console.log('Email:', email);
-        console.log('Password:', password);
-        alert('Đăng ký thành công! (Đây là ví dụ, logic thật sẽ gọi API)');
-    };
+  // ---------------- VALIDATE INPUT ----------------
+  const validateInputs = () => {
+    const nameRegex = /^[A-Za-zÀ-ỹ\s]{3,}$/u;
+    if (!nameRegex.test(name.trim())) return "Tên không hợp lệ!";
 
-    return (
-        <div className={styles.loginPageBackground}>
-            <div className={styles.blurOverlay} />
-            
-            <Container fluid className="d-flex align-items-center justify-content-center min-vh-100 position-relative">
-                <Row className="justify-content-center w-100">
-                    {/* Giảm kích thước Col để Form Register trông gọn hơn, ví dụ: md=7, lg=5 */}
-                    <Col xs={10} sm={10} md={7} lg={5} xl={4}> 
-                        <div className={`${styles.loginCard} p-4 p-md-5 rounded shadow`}>
-                            <h2 className="text-center mb-3">REGISTER</h2>
-                            
-                            <form onSubmit={handleSubmit}>
-                                <div className="d-flex justify-content-center">
-                                    <div className="w-100 w-lg-75"> 
-                                        
-                                        {/* Trường 1: Tên (Name) */}
-                                        <div className="mb-3">
-                                            <label htmlFor="inputName" className={`form-label ${styles.mobileLabel}`}>Họ & Tên</label>
-                                            <input
-                                                type="text"
-                                                className={`form-control ${styles.mobileInput}`}
-                                                id="inputName"
-                                                placeholder="Nguyễn Văn A"
-                                                value={name}
-                                                onChange={(e) => setName(e.target.value)}
-                                                required
-                                            />
-                                        </div>
+    const phoneRegex = /^(0|\+84)(3|5|7|8|9)[0-9]{8}$/;
+    if (!phoneRegex.test(phone)) return "Số điện thoại không hợp lệ!";
 
-                                        {/* Trường 2: Số điện thoại (Phone) */}
-                                        <div className="mb-3">
-                                            <label htmlFor="inputPhone" className={`form-label `}>Số điện thoại</label>
-                                            <input
-                                                type="tel"
-                                                className={`form-control ${styles.mobileInput}`}
-                                                id="inputPhone"
-                                                placeholder="0901234567"
-                                                value={phone}
-                                                onChange={(e) => setPhone(e.target.value)}
-                                                required
-                                            />
-                                        </div>
-                                        
-                                        {/* Trường 3: Email */}
-                                        <div className="mb-3">
-                                            <label htmlFor="inputEmail" className={`form-label`}>Email</label>
-                                            <input
-                                                type="email"
-                                                className={`form-control`} 
-                                                id="inputEmail"
-                                                placeholder="name@example.com"
-                                                value={email}
-                                                onChange={(e) => setEmail(e.target.value)}
-                                                required
-                                            />
-                                        </div>
+    const emailRegex = /^[\w.-]+@[a-zA-Z\d.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(email)) return "Email không hợp lệ!";
 
-                                        {/* Trường 4: Mật khẩu (Password) */}
-                                        <div className="mb-4"> {/* Dùng mb-4 để tạo khoảng trống lớn hơn trước nút */}
-                                            <label htmlFor="inputPassword" className={`form-label`}>Mật khẩu</label>
-                                            <div className="position-relative">
-                                                <input
-                                                    type="password"
-                                                    className={`form-control`}
-                                                    id="inputPassword"
-                                                    placeholder="Mật khẩu"
-                                                    value={password}
-                                                    onChange={(e) => setPassword(e.target.value)}
-                                                    required
-                                                />
-                                                <i className={`bi bi-eye-slash position-absolute ${styles.passwordToggleIcon}`}></i>
-                                            </div>
-                                        </div>
+    if (password.length < 6) return "Mật khẩu phải có ít nhất 6 ký tự.";
 
-                                    </div>
-                                </div>
-                                
-                                {/* Nút Đăng ký */}
-                                <button type="submit" className="btn btn-success w-100 mt-3">
-                                    REGISTER
-                                </button>
-                            </form>
+    return "";
+  };
 
-                            <p className="text-center text-muted mt-4">
-                                Đã có tài khoản?{' '}
-                                <Link to="/login" className={`${styles.forgotPasswordLink} text-decoration-none`}>
-                                    Đăng nhập
-                                </Link>
-                            </p>
-                        </div>
-                    </Col>
-                </Row>
-            </Container>
-        </div>
-    );
+  // ---------------- HANDLE SUBMIT ----------------
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setError("");
+    setSuccess("");
+
+    const validationError = validateInputs();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    try {
+      const response = await fetch("http://127.0.0.1:8000/account/register/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: name.trim(),
+          phone: phone.trim(),
+          email: email.trim(),
+          password: password.trim(),
+        }),
+      });
+
+      if (response.ok) {
+        setSuccess("Đăng ký thành công! 🎉");
+        setName("");
+        setPhone("");
+        setEmail("");
+        setPassword("");
+      } else {
+        const err = await response.json();
+        setError(err.message || "Đăng ký thất bại! Vui lòng thử lại.");
+      }
+    } catch (error) {
+      console.error("Lỗi khi gọi API:", error);
+      setError("Không thể kết nối tới máy chủ. Vui lòng thử lại sau.");
+    }
+  };
+
+  // ---------------- GIAO DIỆN ----------------
+  return (
+    <div className={styles.page}>
+      <div className={styles.overlay}></div>
+
+      <form className={styles.card} onSubmit={handleSubmit}>
+        <h2 className={styles.title}>Register</h2>
+
+        <label>Username</label>
+        <input
+          type="text"
+          placeholder="Input your username"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+        />
+
+        <label>Số điện thoại</label>
+        <input
+          type="tel"
+          placeholder="0901234567"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          required
+        />
+
+        <label>Email</label>
+        <input
+          type="email"
+          placeholder="name@example.com"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+
+        <label>Mật khẩu</label>
+        <input
+          type="password"
+          placeholder="Nhập mật khẩu"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+
+        {error && <p className={styles.error}>{error}</p>}
+        {success && <p className={styles.success}>{success}</p>}
+
+        <button type="submit" className={styles.btn}>
+          Đăng ký
+        </button>
+
+        <p className={styles.switchText}>
+          Đã có tài khoản?{" "}
+          <Link to="/login" className={styles.link}>
+            Đăng nhập
+          </Link>
+        </p>
+      </form>
+    </div>
+  );
 }
