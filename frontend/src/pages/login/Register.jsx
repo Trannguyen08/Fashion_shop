@@ -10,7 +10,6 @@ export default function Register() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  // ---------------- VALIDATE INPUT ----------------
   const validateInputs = () => {
     const nameRegex = /^[A-Za-zÀ-ỹ\s]{3,}$/u;
     if (!nameRegex.test(name.trim())) return "Tên không hợp lệ!";
@@ -26,7 +25,6 @@ export default function Register() {
     return "";
   };
 
-  // ---------------- HANDLE SUBMIT ----------------
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
@@ -39,7 +37,7 @@ export default function Register() {
     }
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/account/register/", {
+      const response = await fetch("account/register/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -66,18 +64,17 @@ export default function Register() {
     }
   };
 
-  // ---------------- GIAO DIỆN ----------------
   return (
     <div className={styles.page}>
       <div className={styles.overlay}></div>
 
       <form className={styles.card} onSubmit={handleSubmit}>
-        <h2 className={styles.title}>Register</h2>
+        <h2 className={styles.title}>ĐĂNG KÝ</h2>
 
-        <label>Username</label>
+        <label>Tên đăng nhập</label>
         <input
           type="text"
-          placeholder="Input your username"
+          placeholder="Nhập tên đăng nhập"
           value={name}
           onChange={(e) => setName(e.target.value)}
           required

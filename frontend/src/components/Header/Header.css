@@ -1,12 +1,12 @@
 .header {
   position: sticky;
   top: 0;
-  width: 100%;
-  background-color: white;
+  width: 95%;
+  background-color: #fff;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 14px 40px;
+  padding: 10px 40px;
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
   z-index: 1000;
   font-family: "Times New Roman", Times, serif;
@@ -30,15 +30,34 @@
 
 .nav-link {
   font-size: 20px !important;
-  font-weight: 600 !important;
   color: #333;
   cursor: pointer;
   position: relative;
   transition: color 0.2s;
+  text-decoration: none;
 }
 
 .nav-link:hover {
-  color: #007bff;
+  color: #e70463;
+}
+
+.nav-link.active {
+  color: #e70463 !important;
+}
+
+.nav-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -7px; 
+  width: 0%;
+  height: 2px;
+  background-color: #e70463;
+  transition: width 0.3s ease;
+}
+
+.nav-link.active::after {
+  width: 100%;
 }
 
 /* --- DROPDOWN --- */
@@ -50,39 +69,67 @@
     position: absolute;
     top: calc(100% + 10px); 
     left: 0;
-    background: rgb(78, 78, 78) !important;
-    border: 1px solid #eee;
+    background: #000 !important;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
     list-style: none;
     margin: 0;
-    width: 150px;
+    width: 160px;
     z-index: 999;
     padding: 0 !important;
     border-radius: 0px !important;
     opacity: 0;
     visibility: hidden;
-    transform: translateY(5px);
-    transition: all 0.2s ease-in-out; 
-    
+    transform: translateY(-10px);
+    transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s;
 }
 
 .dropdown-menu.show {
     opacity: 1;
     visibility: visible;
     transform: translateY(0);
+    animation: dropdownFadeIn 0.3s ease forwards;
+}
+
+/* Animation khi dropdown xuất hiện */
+@keyframes dropdownFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Animation khi dropdown biến mất */
+.dropdown-menu:not(.show) {
+    animation: dropdownFadeOut 0.3s ease forwards;
+}
+
+@keyframes dropdownFadeOut {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
 }
 
 .dropdown-menu li {
-  padding: 7px 15px;
+  padding: 8px 15px;
   font-size: 16px;
   color: #fff;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.3s ease;
 }
 
 .dropdown-menu li:hover {
-  background-color: #f2f2f2;
-  color: #000;
+  background-color: #e70463;
+  color: #fff;
+  padding-left: 18px;
 }
 
 .right-section {
@@ -108,13 +155,13 @@
 }
 
 .search-box input:focus {
-  border-color: #007bff;
+  border-color: #e70463;
 }
 
 .search-icon {
   position: absolute;
   right: 9px;
-  top: 20px;
+  top: 15px;
   transform: translateY(-50%);
   color: #555;
   font-size: 14px;
@@ -129,7 +176,7 @@
 }
 
 .icon:hover {
-  color: #007bff;
+  color: #e70463;
 }
 
 @keyframes fadeIn {
@@ -141,4 +188,15 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Tắt CSS mặc định của Link */
+a, .nav-link, .logo {
+  text-decoration: none !important;
+  color: inherit !important;
+}
+
+/* Đảm bảo hover vẫn hoạt động */
+a:hover, .nav-link:hover {
+  color: #e70463 !important;
 }

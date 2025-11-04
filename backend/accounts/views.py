@@ -1,9 +1,11 @@
+from json import JSONDecodeError
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
 from .models import Account
 from django.db.models import Q
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.exceptions import TokenError
 
 @csrf_exempt
 def register(request):
@@ -48,4 +50,26 @@ def login_view(request):
                 'role': user.role
             }
         })
+    return JsonResponse({"error": "Phương thức không hợp lệ"}, status=405)
+
+@csrf_exempt
+def refresh_token_view(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body.decode('utf-8'))
+            refresh_token_str = data.get("refresh_token")
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Dữ liệu JSON không hợp lệ'}, status=400)
+
+        if not refresh_token_str:
+            return JsonResponse({'error': 'Thiếu refresh token'}, status=400)
+
+        try:
+            refresh = RefreshToken(refresh_token_str)
+            new_access_token = str(refresh.access_token)
+            new_refresh_token = str(RefreshToken.for_user(refresh.user))
+            return JsonResponse({"access_token" : new_access_token, "refresh" : new_refresh_token})
+        except TokenError as e:
+            return JsonResponse({'error': f'Refresh Token không hợp lệ: {e}'}, status=401)
+
     return JsonResponse({"error": "Phương thức không hợp lệ"}, status=405)

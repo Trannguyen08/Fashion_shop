@@ -63,7 +63,7 @@
 }
 
 .social-icon:hover {
-  background-color: #007bff;
+  background-color: #e70463;
   color: #ffffff;
   transform: translateY(-3px);
 }
@@ -87,7 +87,7 @@
 }
 
 .footer-links li a:hover {
-  color: #007bff;
+  color: #e70463;
 }
 
 /* Contact Info */
@@ -112,7 +112,7 @@
 .footer-contact li svg {
   min-width: 18px;
   margin-top: 2px;
-  color: #007bff;
+  color: #e70463;
 }
 
 /* Copyright */
