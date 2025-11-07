@@ -1,0 +1,235 @@
+/* --- Global Reset & Container --- */
+.product-grid-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 10px;
+}
+
+/* --- Thanh Lọc (Filter Bar) --- */
+.filter-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 2px solid #000;
+    margin-bottom: 20px;
+    flex-wrap: wrap; /* Cho phép xuống dòng trên mobile */
+}
+
+.filter-group-left {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.filter-group-right {
+    display: flex;
+    align-items: center;
+}
+
+.filter-item {
+    position: relative;
+}
+
+/* Nút bấm của bộ lọc */
+.filter-button {
+    background: #fff;
+    padding: 8px 8px;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+    font-size: 20px;
+    font-weight: bold;
+    transition: background 0.2s;
+}
+
+
+/* Dropdown menu */
+.filter-dropdown {
+    position: absolute;
+    top: 110%; 
+    left: 0;
+    z-index: 100;
+    background: white;
+    border: 1px solid #ccc;
+    padding: 10px;
+    min-width: 170px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 0 0 5px 5px;
+    max-height: 200px; 
+    overflow-y: auto;
+}
+
+/* Tùy chọn trong dropdown */
+.filter-option {
+    display: flex;
+    align-items: center;
+    padding: 5px 0;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.filter-option:hover {
+    background-color: #f1f1f1;
+}
+
+.filter-option input[type="checkbox"] {
+    /* Ẩn checkbox mặc định */
+    display: none;
+}
+
+/* Custom checkbox (ô tròn) */
+.checkbox-round {
+    width: 16px;
+    height: 16px;
+    border: 2px solid #555;
+    border-radius: 50%;
+    margin-right: 8px;
+    display: inline-block;
+    position: relative;
+    background-color: white;
+}
+
+/* Dấu tick khi được chọn */
+.filter-option input[type="checkbox"]:checked + .checkbox-round::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 8px;
+    height: 8px;
+    background: #007bff; /* Màu của dấu tick */
+    border-radius: 50%;
+}
+
+/* Sắp xếp (Sort - Combobox) */
+.sort-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sort-label {
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.sort-select {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 14px;
+    background: white;
+    cursor: pointer;
+}
+
+/* --- Danh sách Sản phẩm (Product List) --- */
+.product-list {
+    display: grid;
+    /* Desktop: 4 cột */
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+}
+
+.no-products {
+    grid-column: 1 / -1; /* Chiếm hết chiều rộng */
+    text-align: center;
+    padding: 40px;
+    font-size: 1.1em;
+    color: #555;
+}
+
+/* --- Phân Trang (Pagination) --- */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 30px;
+    gap: 10px;
+    padding: 15px 0;
+    border-top: 2px solid #e70463;
+}
+
+.pagination-btn {
+    background: #e70463;
+    color: #fff;
+    border: none;
+    padding: 10px 15px;
+    cursor: pointer;
+    border-radius: 5px;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+.pagination-btn:hover {
+    background: #e70463;
+}
+
+.page-numbers {
+    display: flex;
+    gap: 5px;
+}
+
+.page-number {
+    background: #fff;
+    border: 1px solid #e70463;
+    color: #333;
+    padding: 8px 12px;
+    cursor: pointer;
+    border-radius: 5px;
+    font-size: 14px;
+    min-width: 35px;
+    text-align: center;
+    transition: background 0.2s, color 0.2s;
+}
+
+.page-number:hover:not(.active) {
+    background: #f0f0f0;
+}
+
+.page-number.active {
+    background: #e70463;
+    border: none;
+    color: #fff;
+    font-weight: bold;
+}
+
+.page-ellipsis {
+    padding: 8px 5px;
+    color: #666;
+    font-size: 14px;
+}
+
+/* --- Responsive cho Mobile (max 768px) --- */
+@media (max-width: 768px) {
+    /* Thanh Lọc */
+    .filter-bar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .filter-group-left {
+        flex-basis: 100%; /* Chiếm toàn bộ chiều rộng */
+        justify-content: flex-start;
+        gap: 10px;
+    }
+
+    .filter-group-right {
+        align-self: flex-end; /* Căn lề phải riêng */
+        margin-top: 10px;
+    }
+
+    .filter-dropdown {
+        min-width: 120px;
+        /* Trên mobile, có thể cần căn giữa hoặc căn phải tùy bố cục, ở đây giữ căn trái theo nút */
+    }
+
+    /* Danh sách Sản phẩm */
+    .product-list {
+        /* Mobile: 2 cột */
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+    }
+}

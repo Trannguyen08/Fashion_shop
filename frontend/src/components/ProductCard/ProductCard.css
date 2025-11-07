@@ -89,6 +89,10 @@
     color: #333;
 }
 
+.no-discount {
+    color: #e70463;
+}
+
 .product-footer {
     display: flex;
     align-items: center;

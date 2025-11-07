@@ -15,89 +15,29 @@ const Home = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAutoPlay, setIsAutoPlay] = useState(true);
 
-  const featuredProducts = [
-    {
-      id: 1,
-      image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&h=400&fit=crop",
-      name: "Classic White T-Shirt Premium Cotton",
-      newPrice: 299000,
-      oldPrice: 499000,
-      rating: 5,
-      reviewCount: 245,
-      isFeatured: true
-    },
-    {
-      id: 2,
-      image: "https://images.unsplash.com/photo-1542272604-787c3835535d?w=400&h=400&fit=crop",
-      name: "Denim Jeans Slim Fit Blue",
-      newPrice: 799000,
-      oldPrice: 1200000,
-      rating: 4,
-      reviewCount: 189,
-      isFeatured: true
-    },
-    {
-      id: 3,
-      image: "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=400&h=400&fit=crop",
-      name: "Baseball Cap Streetwear Black",
-      oldPrice: 350000,
-      rating: 4,
-      reviewCount: 67,
-      isFeatured: true
-    },
-    {
-      id: 4,
-      image: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=400&fit=crop",
-      name: "Leather Backpack Urban Style",
-      newPrice: 1290000,
-      oldPrice: 1890000,
-      rating: 5,
-      reviewCount: 312,
-      isFeatured: true
-    }
-  ];
+  // ✅ Thêm state để lưu sản phẩm từ API
+  const [featuredProducts, setFeaturedProducts] = useState([]);
+  const [newArrivals, setNewArrivals] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const newArrivals = [
-    {
-      id: 1,
-      image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&h=400&fit=crop",
-      name: "Classic White T-Shirt Premium Cotton",
-      newPrice: 299000,
-      oldPrice: 499000,
-      rating: 5,
-      reviewCount: 245,
-      isNew: true
-    },
-    {
-      id: 2,
-      image: "https://images.unsplash.com/photo-1542272604-787c3835535d?w=400&h=400&fit=crop",
-      name: "Denim Jeans Slim Fit Blue",
-      newPrice: 799000,
-      oldPrice: 1200000,
-      rating: 4,
-      reviewCount: 189,
-      isNew: true
-    },
-    {
-      id: 3,
-      image: "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=400&h=400&fit=crop",
-      name: "Baseball Cap Streetwear Black",
-      oldPrice: 350000,
-      rating: 4,
-      reviewCount: 67,
-      isNew: true
-    },
-    {
-      id: 4,
-      image: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=400&fit=crop",
-      name: "Leather Backpack Urban Style",
-      newPrice: 1290000,
-      oldPrice: 1890000,
-      rating: 5,
-      reviewCount: 312,
-      isNew: true
+  // ✅ Hàm gọi API
+  const fetchHomeProducts = async () => {
+    try {
+      const response = await fetch(" http://127.0.0.1:8000/product/get_home_products/");
+      const data = await response.json();
+      setFeaturedProducts(data.featured);
+      setNewArrivals(data.new);
+    } catch (error) {
+      console.error("❌ Lỗi khi tải sản phẩm:", error);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  // ✅ Gọi API khi trang load
+  useEffect(() => {
+    fetchHomeProducts();
+  }, []);
 
   const testimonials = [
     {
@@ -184,31 +124,39 @@ const Home = () => {
       <div className="promotions-section">
         <h2 className="section-title">Shop by Categories</h2>
         <div className="categories-grid">
-          <CategoryItem image={tops} title="TOP" onView={() => console.log('View Top')} />
-          <CategoryItem image={bottoms} title="BOTTOM" onView={() => console.log('View Bottom')} />
-          <CategoryItem image={caps} title="CAP" onView={() => console.log('View Cap')} />
-          <CategoryItem image={bags} title="BAG" onView={() => console.log('View Bag')} />
+          <CategoryItem image={tops} title="TOP" link="/top" />
+          <CategoryItem image={bottoms} title="BOTTOM" link="/bottom" />
+          <CategoryItem image={caps} title="CAP" link="/cap" />
+          <CategoryItem image={bags} title="BAG" link="/bag" />
         </div>
       </div>
 
       {/* Featured Products Section */}
       <div className="promotions-section">
         <h2 className="section-title">Featured Products</h2>
-        <div className="featured-products-grid">
-          {featuredProducts.map(product => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
+        {loading ? (
+          <p>Đang tải sản phẩm nổi bật...</p>
+        ) : (
+          <div className="featured-products-grid">
+            {featuredProducts.map(product => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* New Arrivals Section */}
       <div className="promotions-section">
         <h2 className="section-title">New Arrivals</h2>
-        <div className="new-arrivals-products-grid">
-          {newArrivals.map(product => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
+        {loading ? (
+          <p>Đang tải sản phẩm mới...</p>
+        ) : (
+          <div className="new-arrivals-products-grid">
+            {newArrivals.map(product => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Customer Testimonials Section */}

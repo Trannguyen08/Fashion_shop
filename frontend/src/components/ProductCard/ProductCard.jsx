@@ -34,9 +34,10 @@ const ProductCard = ({ product }) => {
           {product.newPrice && (
             <span className="price-new">{product.newPrice.toLocaleString('vi-VN')}₫</span>
           )}
-          <span className={product.newPrice ? "price-old" : "price-current"}>
+          <span className={product.newPrice ? "price-old" : "price-current no-discount"}>
             {product.oldPrice.toLocaleString('vi-VN')}₫
           </span>
+
         </div>
         
         <div className="product-footer">
