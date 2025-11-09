@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'accounts',
     'products',
+    'drf_yasg',
     'rest_framework_simplejwt'
 ]
 

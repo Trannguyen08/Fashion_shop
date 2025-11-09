@@ -3,7 +3,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from django.core.cache import cache
 from .models import Product, Review
-from .serializers import ProductSerializer
+from .serializers import ProductSerializer, ReviewSerializer
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
@@ -29,22 +29,26 @@ def get_home_product(request):
     news = cache.get(NEW_KEY)
     reviews = cache.get(REVIEW_KEY)
 
-    if featured is None or news is None or reviews is None:
+    if featured is None:
         feature_qs = Product.objects.filter(is_featured=True)[:4]
-        new_qs = Product.objects.filter(is_new=True)[:4]
-        review_qs = Review.objects.order_by("rating")[:4]
-
-        featured_products = ProductSerializer(feature_qs, many=True).data
-        new_products = ProductSerializer(new_qs, many=True).data
-
-
+        featured = ProductSerializer(feature_qs, many=True).data
         cache.set(FEATURED_KEY, featured, timeout=86400)
-        cache.set(NEW_KEY, new_products, timeout=86400)
+
+    if news is None:
+        new_qs = Product.objects.filter(is_new=True)[:4]
+        news = ProductSerializer(new_qs, many=True).data
+        cache.set(NEW_KEY, news, timeout=86400)
+
+    if reviews is None:
+        review_qs = Review.objects.select_related('account').order_by('-rating')[:4]
+        reviews = ReviewSerializer(review_qs, many=True).data
+        cache.set(REVIEW_KEY, reviews, timeout=86400)
 
     return JsonResponse({
-        "featured": featured_products,
-        "new": new_products
-    })
+        "featured": featured,
+        "new": news,
+        "reviews": reviews
+    }, status=200)
 
 
 

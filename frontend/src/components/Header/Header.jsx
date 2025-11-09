@@ -1,11 +1,26 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import "./Header.css";
 import { FaSearch, FaShoppingCart, FaUser } from "react-icons/fa";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
+import defaultAvatar from "../../assets/images/user.png";
 
 const Header = () => {
   const [showDropdown, setShowDropdown] = useState(false);
+  const [user, setUser] = useState(null);
   const timeoutRef = useRef(null);
+  const location = useLocation();
+
+  // ✅ Kiểm tra user trong localStorage
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch {
+        console.error("Lỗi khi parse user từ localStorage");
+      }
+    }
+  }, []);
 
   const handleMouseEnter = () => {
     clearTimeout(timeoutRef.current);
@@ -20,7 +35,7 @@ const Header = () => {
     <header className="header">
       <Link to="/" className="logo">LocalBrand</Link>
 
-
+      {/* ----- NAV LIST ----- */}
       <ul className="nav-list">
         <li
           className="dropdown"
@@ -34,7 +49,7 @@ const Header = () => {
             Shop
           </Link>
           {showDropdown && (
-            <ul className={`dropdown-menu show`}>
+            <ul className="dropdown-menu show">
               <li><Link to="/shop/shirt">Shirt</Link></li>
               <li><Link to="/shop/t-shirt">T-shirt</Link></li>
               <li><Link to="/shop/polo">Polo</Link></li>
@@ -84,17 +99,31 @@ const Header = () => {
         </li>
       </ul>
 
+      {/* ----- RIGHT SECTION ----- */}
       <div className="right-section">
         <div className="search-box">
           <input type="text" placeholder="Search..." />
           <FaSearch className="search-icon" />
         </div>
+
         <Link to="/cart">
           <FaShoppingCart className="icon" />
         </Link>
-        <Link to="/login">
-          <FaUser className="icon" />
-        </Link>
+
+        {/* ✅ Nếu có user → hiển thị avatar, ngược lại hiển thị icon */}
+        {user ? (
+          <Link to="/profile" className="user-avatar-link">
+            <img
+              src={user.avatar_img || defaultAvatar}
+              alt="avatar"
+              className="user-avatar"
+            />
+          </Link>
+        ) : (
+          <Link to="/login">
+            <FaUser className="icon" />
+          </Link>
+        )}
       </div>
     </header>
   );

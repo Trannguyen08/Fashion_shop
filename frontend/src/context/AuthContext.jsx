@@ -3,7 +3,6 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
 const AuthContext = createContext(null);
-
 const REFRESH_URL = "/account/token/refresh/"; 
 
 export const useAuth = () => useContext(AuthContext);

@@ -1,20 +1,17 @@
 from rest_framework import serializers
-from .models import Product, ProductImage, ProductVariant, Category, Review
+from .models import Product, ProductImage, ProductVariant, Category, Review, User
 
 class ProductImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductImage
         fields = ['id', 'PI_img']
 
-class ReviewSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Review
-        fields = ['', 'PI_img']
 
 class ProductVariantSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductVariant
         fields = ['id', 'sku', 'size', 'color', 'stock_quantity', 'PV_img', 'status']
+
 
 class ProductSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source="category.name", read_only=True)
@@ -29,3 +26,12 @@ class ProductSerializer(serializers.ModelSerializer):
             'is_new', 'average_rating', 'created_at',
             'category_name', 'product_imgs', 'product_variants'
         ]
+
+
+class ReviewSerializer(serializers.ModelSerializer):
+    full_name = serializers.CharField(source='account.user.full_name', read_only=True)
+    avatar_img = serializers.ImageField(source='account.user.avatar_img', read_only=True, allow_null=True, use_url=True)
+
+    class Meta:
+        model = Review
+        fields = ['id', 'full_name', 'avatar_img', 'rating', 'comment']

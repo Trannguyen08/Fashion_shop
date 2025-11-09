@@ -1,6 +1,6 @@
 from django.db import models
 from django.db.models import Avg
-from accounts.models import Account
+from accounts.models import Account, User
 
 #model category
 class Category(models.Model):

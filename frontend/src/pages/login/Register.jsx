@@ -1,18 +1,25 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from '../../context/AuthContext';
 import styles from "./Register.module.css";
 
 export default function Register() {
-  const [name, setName] = useState("");
+  const { login } = useAuth();
+  const [username, setUsername] = useState("");
+  const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const navigate = useNavigate();
 
   const validateInputs = () => {
+    const usernameRegex = /^[A-Za-z0-9_]{3,}$/;
+    if (!usernameRegex.test(username.trim())) return "Tên đăng nhập không hợp lệ!";
+
     const nameRegex = /^[A-Za-zÀ-ỹ\s]{3,}$/u;
-    if (!nameRegex.test(name.trim())) return "Tên không hợp lệ!";
+    if (!nameRegex.test(fullName.trim())) return "Họ tên không hợp lệ!";
 
     const phoneRegex = /^(0|\+84)(3|5|7|8|9)[0-9]{8}$/;
     if (!phoneRegex.test(phone)) return "Số điện thoại không hợp lệ!";
@@ -37,26 +44,32 @@ export default function Register() {
     }
 
     try {
-      const response = await fetch("account/register/", {
+      const response = await fetch("http://127.0.0.1:8000/account/register/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          username: name.trim(),
+          username: username.trim(),
+          full_name: fullName.trim(),
           phone: phone.trim(),
           email: email.trim(),
           password: password.trim(),
         }),
       });
 
+      const data = await response.json();
+
       if (response.ok) {
-        setSuccess("Đăng ký thành công! 🎉");
-        setName("");
+        login(data);
+        setSuccess(`Đăng ký thành công! Chào mừng ${data.full_name || fullName}!`);
+        setUsername("");
+        setFullName("");
         setPhone("");
         setEmail("");
         setPassword("");
+
+        navigate("/");
       } else {
-        const err = await response.json();
-        setError(err.message || "Đăng ký thất bại! Vui lòng thử lại.");
+        setError(data.message || "Đăng ký thất bại! Vui lòng thử lại.");
       }
     } catch (error) {
       console.error("Lỗi khi gọi API:", error);
@@ -71,15 +84,27 @@ export default function Register() {
       <form className={styles.card} onSubmit={handleSubmit}>
         <h2 className={styles.title}>ĐĂNG KÝ</h2>
 
+        {/* --- Username --- */}
         <label>Tên đăng nhập</label>
         <input
           type="text"
           placeholder="Nhập tên đăng nhập"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
           required
         />
 
+        {/* --- Full Name --- */}
+        <label>Họ và tên</label>
+        <input
+          type="text"
+          placeholder="Nhập họ và tên"
+          value={fullName}
+          onChange={(e) => setFullName(e.target.value)}
+          required
+        />
+
+        {/* --- Phone --- */}
         <label>Số điện thoại</label>
         <input
           type="tel"
@@ -89,6 +114,7 @@ export default function Register() {
           required
         />
 
+        {/* --- Email --- */}
         <label>Email</label>
         <input
           type="email"
@@ -98,6 +124,7 @@ export default function Register() {
           required
         />
 
+        {/* --- Password --- */}
         <label>Mật khẩu</label>
         <input
           type="password"

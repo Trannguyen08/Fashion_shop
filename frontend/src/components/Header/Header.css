@@ -1,5 +1,4 @@
 .header {
-  position: sticky;
   top: 0;
   width: 95%;
   background-color: #fff;
@@ -8,8 +7,6 @@
   align-items: center;
   padding: 10px 40px;
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
-  z-index: 1000;
-  font-family: "Times New Roman", Times, serif;
 }
 
 .logo {
@@ -121,16 +118,18 @@
 .dropdown-menu li {
   padding: 8px 15px;
   font-size: 16px;
-  color: #fff;
+  color: #fff !important;
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
 .dropdown-menu li:hover {
   background-color: #e70463;
-  color: #fff;
+  color: fff !important;
   padding-left: 18px;
 }
+
+
 
 .right-section {
   display: flex;
@@ -168,6 +167,19 @@
   cursor: pointer;
 }
 
+.user-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.user-avatar:hover {
+  transform: scale(1.1);
+}
+
 .icon {
   font-size: 18px;
   color: #333;
@@ -190,13 +202,11 @@
   }
 }
 
-/* Tắt CSS mặc định của Link */
 a, .nav-link, .logo {
   text-decoration: none !important;
   color: inherit !important;
 }
 
-/* Đảm bảo hover vẫn hoạt động */
 a:hover, .nav-link:hover {
   color: #e70463 !important;
 }

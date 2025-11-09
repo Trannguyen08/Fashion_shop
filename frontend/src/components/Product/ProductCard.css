@@ -52,9 +52,9 @@
     padding: 16px;
 }
 
-.product-name {
+.product-name2 {
     margin: 0 0 7px 0;
-    font-size: 16px;
+    font-size: 16px !important;
     font-weight: 600;
     color: #333;
     line-height: 1.4;
@@ -63,30 +63,34 @@
     text-overflow: ellipsis;
     text-align: left;
 }
+.product-name2:hover {
+    text-decoration: underline;
+}
 
-.product-price {
-    margin-bottom: 7px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+.product-price2 {
+  display: flex;
+  align-items: center;
+  border: none !important;
 }
 
 .price-new {
-    font-size: 20px;
-    font-weight: 700;
-    color: #e70463;
+  font-size: 18px;
+  font-weight: 700;
+  color: #e70463;
 }
 
 .price-old {
-    font-size: 14px;
-    color: #999;
-    text-decoration: line-through;
+  font-size: 14px;
+  color: #999;
+  text-decoration: line-through;
+  opacity: 0.7;
+  margin-left: 7px;
 }
 
-.price-current {
-    font-size: 20px;
-    font-weight: 700;
-    color: #333;
+.price-only {
+  font-size: 18px;
+  font-weight: 700;
+  color: #e70463;
 }
 
 .no-discount {
