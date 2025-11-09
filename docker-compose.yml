@@ -6,41 +6,44 @@ services:
     container_name: fashion-shop-db
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: root123
-      MYSQL_DATABASE: fashion_shop
-      MYSQL_USER: user
-      MYSQL_PASSWORD: user123
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     ports:
-      - "3306:3306"
+      - "${MYSQL_PORT}:3306"
     volumes:
       - db_data:/var/lib/mysql
 
   backend:
     build: ./backend
-    command: python run.py runserver 0.0.0.0:8000
+    container_name: fashion-shop-backend
+    command: python run.py runserver 0.0.0.0:${BACKEND_PORT}
     volumes:
       - ./backend:/app
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT}:${BACKEND_PORT}"
     environment:
-      - DEBUG=1
-      - MYSQL_HOST=db
-      - MYSQL_PORT=3306
-      - MYSQL_DATABASE=fashion-db
-      - MYSQL_USER=root
-      - MYSQL_PASSWORD=081105
+      DEBUG: ${DEBUG}
+      MYSQL_HOST: db
+      MYSQL_PORT: ${MYSQL_PORT}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     depends_on:
       - db
 
   frontend:
     build: ./frontend
+    container_name: fashion-shop-frontend
+    working_dir: /app
     volumes:
       - ./frontend:/app
-    working_dir: /app
     ports:
-      - "5173:5173"
+      - "${FRONTEND_PORT}:${FRONTEND_PORT}"
     command: npm run dev -- --host
     depends_on:
       - backend
+
 volumes:
   db_data:
