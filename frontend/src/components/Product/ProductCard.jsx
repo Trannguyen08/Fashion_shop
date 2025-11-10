@@ -1,10 +1,12 @@
 import React from 'react';
 import { ShoppingCart, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import useCart from '../../hooks/useCart'
 import './ProductCard.css';
 
 const ProductCard = ({ product, onProductClick }) => {
   const navigate = useNavigate();
+  const { addToCart } = useCart();
 
   const renderStars = (rating) => {
     const stars = [];
@@ -23,11 +25,6 @@ const ProductCard = ({ product, onProductClick }) => {
 
   const handleProductClick = () => {
     navigate(`/product/${product.id}`, { state: { product } });
-  };
-
-  const handleAddToCart = (e) => {
-    e.stopPropagation();
-    console.log('Thêm vào giỏ hàng:', product.id);
   };
 
   return (
@@ -65,13 +62,6 @@ const ProductCard = ({ product, onProductClick }) => {
             <span className="rating-count">(0)</span>
           </div>
           
-          <button 
-            className="add-to-cart-btn" 
-            aria-label="Thêm vào giỏ hàng"
-            onClick={handleAddToCart}
-          >
-            <ShoppingCart size={20} />
-          </button>
         </div>
       </div>
     </div>

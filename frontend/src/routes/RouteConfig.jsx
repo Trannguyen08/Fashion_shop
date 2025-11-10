@@ -5,7 +5,9 @@ import Home from '../pages/client/Home/Home';
 import About from '../pages/client/About/About';
 import Contact from '../pages/client/Contact/Contact';
 import Category from '../pages/client/Category/Category';
+import Checkout from '../pages/client/Checkout/CheckoutPage';
 import ProductDetail from '../components/Product/ProductDetail';
+import Cart from '../pages/client/Cart/Cart'
 import { useLocation } from 'react-router-dom';
 
 const ProductDetailPage = () => {
@@ -21,7 +23,9 @@ export default function RouteConfig() {
       <Route path="/register" element={<Register />} />
       <Route path="/login" element={<Login />} />
       <Route path="/about" element={<About />} />
+      <Route path="/cart" element={<Cart />} />
       <Route path="/contact" element={<Contact />} />
+      <Route path="/checkout" element={<CheckoutPage />} />
       <Route path="/category/:category" element={<Category />} />
       <Route path="/product/:productId" element={<ProductDetailPage />} />
       <Route path="*" element={<h1>404 - Not Found</h1>} />
