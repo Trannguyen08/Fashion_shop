@@ -1,6 +1,3 @@
-import React from "react";
-import Header from "../../../components/Header/Header";
-import Footer from "../../../components/Footer/Footer";
 import { Heart, Award, Users, ShoppingBag } from 'lucide-react';
 import "./About.css";
 
@@ -61,7 +58,6 @@ const About = () => {
 
   return (
     <div className="aboutPage">
-      <Header />
 
       {/* Hero Section */}
       <div className="about-hero">
@@ -165,7 +161,6 @@ const About = () => {
         </div>
       </div>
 
-      <Footer />
     </div>
   );
 };

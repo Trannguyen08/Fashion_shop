@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from "react";
-import Header from "../../../components/Header/Header";
-import Footer from "../../../components/Footer/Footer";
-import CategoryItem from "../../../components/CategoryItem/CategoryItem";
-import ProductCard from "../../../components/Product/ProductCard";
-import Testimonials from "../../../components/Testimonials"; 
-import tops from "../../../assets/images/tops.webp";
-import bottoms from "../../../assets/images/bottoms.webp";
-import caps from "../../../assets/images/caps.jpg";
-import bags from "../../../assets/images/bags.jpg";
+import CategoryItem from "../../components/CategoryItem/CategoryItem";
+import ProductCard from "../../components/Product/ProductCard";
+import Testimonials from "../../components/Testimonials"; 
+import tops from "../../assets/images/tops.webp";
+import bottoms from "../../assets/images/bottoms.webp";
+import caps from "../../assets/images/caps.jpg";
+import bags from "../../assets/images/bags.jpg";
 import { Link } from "react-router-dom";
 import "./Home.css";
 
@@ -37,7 +35,6 @@ const Home = () => {
 
   return (
     <div className="homePage">
-      <Header />
 
       {/* Banner */}
       <div className="banner-box">
@@ -108,7 +105,6 @@ const Home = () => {
         </div>
       </div>
 
-      <Footer />
     </div>
   );
 };

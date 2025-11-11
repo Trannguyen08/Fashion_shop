@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'accounts',
     'products',
     'drf_yasg',
+    'cart',
     'rest_framework_simplejwt'
 ]
 

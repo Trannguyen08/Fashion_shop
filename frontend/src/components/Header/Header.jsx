@@ -7,6 +7,7 @@ import defaultAvatar from "../../assets/images/user.png";
 const Header = () => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [user, setUser] = useState(null);
+  const [cartCount, setCartCount] = useState(0);
   const timeoutRef = useRef(null);
   const location = useLocation();
 
@@ -22,6 +23,29 @@ const Header = () => {
     }
   }, []);
 
+  // ✅ Lấy SỐ LƯỢNG SẢN PHẨM KHÁC NHAU trong giỏ hàng từ localStorage
+  useEffect(() => {
+    const loadCartCount = () => {
+      try {
+        const cartData = JSON.parse(localStorage.getItem("cart"));
+        // Lấy số lượng items (sản phẩm khác nhau), không phải tổng quantity
+        const count = cartData?.items?.length || 0;
+        setCartCount(count);
+      } catch {
+        setCartCount(0);
+      }
+    };
+
+    loadCartCount();
+
+    // Theo dõi sự thay đổi giỏ hàng trong localStorage
+    window.addEventListener("storage", loadCartCount);
+
+    return () => {
+      window.removeEventListener("storage", loadCartCount);
+    };
+  }, []);
+
   const handleMouseEnter = () => {
     clearTimeout(timeoutRef.current);
     setShowDropdown(true);
@@ -33,7 +57,9 @@ const Header = () => {
 
   return (
     <header className="header">
-      <Link to="/" className="logo">LocalBrand</Link>
+      <Link to="/" className="logo">
+        LocalBrand
+      </Link>
 
       {/* ----- NAV LIST ----- */}
       <ul className="nav-list">
@@ -42,57 +68,67 @@ const Header = () => {
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
-          <Link 
-            to="/shop" 
-            className={`nav-link ${location.pathname.startsWith('/shop') ? 'active' : ''}`}
+          <Link
+            to="/shop"
+            className={`nav-link ${
+              location.pathname.startsWith("/shop") ? "active" : ""
+            }`}
           >
             Shop
           </Link>
           {showDropdown && (
             <ul className="dropdown-menu show">
-              <li><Link to="/shop/shirt">Shirt</Link></li>
-              <li><Link to="/shop/t-shirt">T-shirt</Link></li>
-              <li><Link to="/shop/polo">Polo</Link></li>
-              <li><Link to="/shop/pants">Pants</Link></li>
-              <li><Link to="/shop/short">Short</Link></li>
-              <li><Link to="/shop/jacket">Jacket</Link></li>
-              <li><Link to="/shop/hoodies">Hoodies</Link></li>
-              <li><Link to="/shop/cardigan">Cardigan</Link></li>
+              <li><Link to="/category/shirt">Shirt</Link></li>
+              <li><Link to="/category/t-shirt">T-shirt</Link></li>
+              <li><Link to="/category/polo">Polo</Link></li>
+              <li><Link to="/category/pants">Pants</Link></li>
+              <li><Link to="/category/short">Short</Link></li>
+              <li><Link to="/category/jacket">Jacket</Link></li>
+              <li><Link to="/category/hoodies">Hoodies</Link></li>
+              <li><Link to="/category/cardigan">Cardigan</Link></li>
             </ul>
           )}
         </li>
 
         <li>
-          <Link 
-            to="/best-seller" 
-            className={`nav-link ${location.pathname === '/best-seller' ? 'active' : ''}`}
+          <Link
+            to="/best-seller"
+            className={`nav-link ${
+              location.pathname === "/best-seller" ? "active" : ""
+            }`}
           >
             Best Seller
           </Link>
         </li>
 
         <li>
-          <Link 
-            to="/new-arrival" 
-            className={`nav-link ${location.pathname === '/new-arrival' ? 'active' : ''}`}
+          <Link
+            to="/new-arrival"
+            className={`nav-link ${
+              location.pathname === "/new-arrival" ? "active" : ""
+            }`}
           >
             New Arrival
           </Link>
         </li>
 
         <li>
-          <Link 
-            to="/about" 
-            className={`nav-link ${location.pathname === '/about' ? 'active' : ''}`}
+          <Link
+            to="/about"
+            className={`nav-link ${
+              location.pathname === "/about" ? "active" : ""
+            }`}
           >
             About
           </Link>
         </li>
 
         <li>
-          <Link 
-            to="/contact" 
-            className={`nav-link ${location.pathname === '/contact' ? 'active' : ''}`}
+          <Link
+            to="/contact"
+            className={`nav-link ${
+              location.pathname === "/contact" ? "active" : ""
+            }`}
           >
             Contact
           </Link>
@@ -106,11 +142,11 @@ const Header = () => {
           <FaSearch className="search-icon" />
         </div>
 
-        <Link to="/cart">
+        <Link to="/cart" className="cart-icon-container">
           <FaShoppingCart className="icon" />
+          {cartCount > 0 && <span className="cart-count">{cartCount}</span>}
         </Link>
 
-        {/* ✅ Nếu có user → hiển thị avatar, ngược lại hiển thị icon */}
         {user ? (
           <Link to="/profile" className="user-avatar-link">
             <img

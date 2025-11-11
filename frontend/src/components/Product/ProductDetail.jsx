@@ -93,16 +93,28 @@ const ProductDetail = ({ product }) => {
       return;
     }
 
+    // 📦 Tạo object product
     const productToAdd = {
       id: product.id,
       name: product.name,
-      price: product.current_price,
-      image: mainImage,
-      color: selectedColor,
-      size: selectedSize,
+      current_price: product.current_price,
+      product_img: mainImage,
     };
 
-    const success = await addToCart(productToAdd, quantity);
+    // Truyền thêm variantInfo chứa size và color
+    const variantInfo = {
+      size: selectedSize,
+      color: selectedColor,
+    };
+
+    // Gọi addToCart với 4 tham số
+    const success = await addToCart(
+      productToAdd,
+      currentVariant.id, 
+      quantity,
+      variantInfo 
+    );
+
     if (success) {
       alert(`Đã thêm ${quantity} sản phẩm vào giỏ hàng`);
       setQuantity(1);

@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { ChevronLeft } from 'lucide-react';
 import './Checkout.css';
 
 const Checkout = ({ cartItems = [], totalAmount = 0, onBack = () => {} }) => {
