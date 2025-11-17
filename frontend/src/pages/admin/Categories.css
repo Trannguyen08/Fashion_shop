@@ -1,0 +1,14 @@
+
+.icon-action {
+    transition: transform 0.2s, color 0.2s; 
+    cursor: pointer;
+}
+
+.icon-action:hover {
+    transform: scale(1.2); 
+    color: #0d6efd; 
+}
+
+.icon-action.delete:hover {
+    color: #dc3545; 
+}
