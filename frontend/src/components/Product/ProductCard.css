@@ -101,12 +101,13 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    margin-top: 15px;
 }
 
 .product-rating {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 2px !important;
 }
 
 .rating-count {
@@ -115,25 +116,3 @@
     margin-left: 4px;
 }
 
-.add-to-cart-btn {
-    padding: 7px 7px;
-    border-radius: 5px;
-    background-color: #fff;
-    border: none;
-    color: #000;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.3s ease, transform 0.2s ease;
-}
-
-.add-to-cart-btn:hover {
-    color: #fff;
-    background-color: #000;
-    transform: scale(1.1);
-}
-
-.add-to-cart-btn:active {
-    transform: scale(0.95);
-}

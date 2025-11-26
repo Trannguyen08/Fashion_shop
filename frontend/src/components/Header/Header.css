@@ -1,6 +1,6 @@
 .header {
   top: 0;
-  width: 95%;
+  width: 100%;
   background-color: #fff;
   display: flex;
   justify-content: space-between;
@@ -209,4 +209,26 @@ a, .nav-link, .logo {
 
 a:hover, .nav-link:hover {
   color: #e70463 !important;
+}
+
+.cart-icon-container {
+  position: relative;
+  display: inline-block;
+}
+
+.cart-count {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  background-color: #e70463;
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 50%;
+  width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.2);
 }

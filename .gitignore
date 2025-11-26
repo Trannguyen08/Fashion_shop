@@ -4,6 +4,7 @@ __pycache__/
 *$py.class
 myenv/
 .env
+frontend/node_modules/
 
 # C extensions
 *.so

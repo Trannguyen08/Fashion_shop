@@ -1,14 +1,20 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Header from '../Header/Header';
 import Footer from '../Footer/Footer';
+import useCart from '../../hooks/useCart'
 import { Star } from "lucide-react";
 import './ProductDetail.css';
 
 const ProductDetail = ({ product }) => {
+  const navigate = useNavigate();
+
   const [selectedColor, setSelectedColor] = useState(null);
   const [selectedSize, setSelectedSize] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [mainImage, setMainImage] = useState(null);
+  
+  const { addToCart } = useCart();
 
   useEffect(() => {
     if (product) {
@@ -56,22 +62,63 @@ const ProductDetail = ({ product }) => {
     }
   };
 
-  const handleAddToCart = () => {
-    if (!currentVariant) {
-      alert('Vui lòng chọn màu sắc và kích thước');
-      return;
-    }
-    console.log('Thêm vào giỏ:', { ...currentVariant, quantity });
-    alert(`Đã thêm ${quantity} sản phẩm vào giỏ hàng`);
-  };
-
   const handleBuyNow = () => {
     if (!currentVariant) {
       alert('Vui lòng chọn màu sắc và kích thước');
       return;
     }
-    console.log('Mua ngay:', { ...currentVariant, quantity });
-    alert(`Mua ngay ${quantity} sản phẩm`);
+
+    // Lưu thông tin sản phẩm vào sessionStorage
+    const itemForCheckout = {
+      id: product.id,
+      name: product.name,
+      price: product.current_price,
+      quantity: quantity,
+      image: mainImage,
+      color: selectedColor,
+      size: selectedSize,
+      product_img: product.product_img
+    };
+
+    sessionStorage.setItem('checkoutItems', JSON.stringify([itemForCheckout]));
+    sessionStorage.setItem('checkoutTotal', JSON.stringify(product.current_price * quantity));
+
+    // Điều hướng đến trang checkout
+    navigate('/checkout');
+  };
+
+  const handleAddToCart = async () => {
+    if (!currentVariant) {
+      alert('Vui lòng chọn màu sắc và kích thước');
+      return;
+    }
+
+    // 📦 Tạo object product
+    const productToAdd = {
+      id: product.id,
+      name: product.name,
+      current_price: product.current_price,
+      product_img: mainImage,
+    };
+
+    // Truyền thêm variantInfo chứa size và color
+    const variantInfo = {
+      size: selectedSize,
+      color: selectedColor,
+    };
+
+    // Gọi addToCart với 4 tham số
+    const success = await addToCart(
+      productToAdd,
+      currentVariant.id, 
+      quantity,
+      variantInfo 
+    );
+
+    if (success) {
+      alert(`Đã thêm ${quantity} sản phẩm vào giỏ hàng`);
+      setQuantity(1);
+    }
   };
 
   if (!product) {

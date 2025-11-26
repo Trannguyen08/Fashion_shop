@@ -1,12 +1,9 @@
 from django.db import models
 from django.db.models import Avg
-from accounts.models import Account, User
+from accounts.models import Account
+from cloudinary.models import CloudinaryField
+from categories.models import Category
 
-#model category
-class Category(models.Model):
-    name = models.CharField(max_length=255, unique=True)
-    def __str__(self):
-        return self.name
 
 #model product
 class Product(models.Model):
@@ -17,7 +14,7 @@ class Product(models.Model):
     description = models.TextField()
     stock_quantity = models.IntegerField(default=0)
     status = models.CharField(max_length=50)
-    product_img = models.TextField()
+    product_img = CloudinaryField('image', blank=True, null=True)
     is_featured = models.BooleanField(default=False)
     is_new = models.BooleanField(default=True)
     average_rating = models.FloatField(default=0)
@@ -58,10 +55,10 @@ class ProductVariant(models.Model):
     size = models.CharField(max_length=3)
     color = models.CharField(max_length=15)
     stock_quantity = models.IntegerField(default=0)
-    PV_img = models.TextField()
+    PV_img = CloudinaryField('image', blank=True, null=True)
     status = models.CharField(max_length=50)
 
-    def update_status_by_stockq(self):
+    def update_status_by_stock(self):
         if self.stock_quantity == 0:
             self.status = "out-of-stock"
         self.save()
@@ -72,7 +69,7 @@ class ProductVariant(models.Model):
 #model productImages
 class ProductImage(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='product_imgs')
-    PI_img = models.TextField()
+    PI_img = CloudinaryField('image')
 
     def __str__(self):
         return f"{self.product.name} Image"

@@ -1,0 +1,69 @@
+
+.icon-action {
+    transition: transform 0.2s, color 0.2s; 
+    cursor: pointer;
+}
+
+.icon-action:hover {
+    transform: scale(1.2); 
+    color: #0d6efd; 
+}
+
+.icon-action.delete:hover {
+    color: #dc3545; 
+}
+
+.form-control {
+    margin-bottom: 0px !important;
+    box-shadow: none !important;
+}
+
+th {
+    background-color: #191b25 !important;
+    color: #fff !important;
+    font-size: 15px !important;
+    align-items: center !important;
+}
+
+.product-name {
+    display: block; 
+    max-width: 180px;   /* chỉnh tùy theo layout */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 14px !important;
+}
+
+.icon-btn {
+    padding: 4px 4px !important;
+}
+
+.pagination-container {
+    display: flex;
+    justify-content: flex-end; /* căn lề phải */
+    align-items: center;
+    gap: 6px;
+    margin-top: 12px;
+}
+
+.pagination-btn {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border-radius: 4px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 0.7rem; /* nhỏ gọn */
+    cursor: pointer;
+}
+
+.pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pagination-info {
+    font-size: 15px;
+    color: #6c757d;
+}

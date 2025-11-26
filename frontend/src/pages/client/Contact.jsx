@@ -1,6 +1,5 @@
 import React, { useState } from "react";
-import Header from "../../../components/Header/Header";
-import Footer from "../../../components/Footer/Footer";
+import { FaMapMarkerAlt, FaPhone, FaEnvelope, FaClock, FaPaperPlane } from "react-icons/fa";
 import "./Contact.css";
 
 const Contact = () => {
@@ -55,52 +54,59 @@ const Contact = () => {
   };
 
   return (
-    <div className="contactPage">
-      <Header />
+    <div className="contact__page">
 
       {/* Banner */}
-      <div className="contact-banner">
-        <div className="contact-banner-content">
-          <h1 className="contact-banner-title">Liên Hệ Với Chúng Tôi</h1>
-          <p className="contact-banner-subtitle">
+      <div className="contact__banner">
+        <div className="contact__banner-content">
+          <h1 className="contact__banner-title">Liên Hệ Với Chúng Tôi</h1>
+          <p className="contact__banner-subtitle">
             Chúng tôi luôn sẵn sàng lắng nghe và hỗ trợ bạn
           </p>
         </div>
       </div>
 
       {/* Contact Section */}
-      <div className="contact-container">
-        <div className="contact-info-section">
-          <h2 className="contact-section-title">Thông Tin Liên Hệ</h2>
+      <div className="contact__container">
+        <div className="contact__info-section">
+          <h2 className="contact__section-title">Thông Tin Liên Hệ</h2>
           
-          <div className="contact-info-box">
-            <div className="info-item">
-              <div className="info-icon">📍</div>
-              <div className="info-content">
+          <div className="contact__info-box">
+            <div className="contact__info-item">
+              <div className="contact__info-icon">
+                <FaMapMarkerAlt />
+              </div>
+              <div className="contact__info-content">
                 <h3>Địa Chỉ</h3>
                 <p>123 Đường Fashion, Quận 1, TP. Hồ Chí Minh</p>
               </div>
             </div>
 
-            <div className="info-item">
-              <div className="info-icon">📞</div>
-              <div className="info-content">
+            <div className="contact__info-item">
+              <div className="contact__info-icon">
+                <FaPhone />
+              </div>
+              <div className="contact__info-content">
                 <h3>Điện Thoại</h3>
                 <p>+84 (0) 123 456 789</p>
               </div>
             </div>
 
-            <div className="info-item">
-              <div className="info-icon">📧</div>
-              <div className="info-content">
+            <div className="contact__info-item">
+              <div className="contact__info-icon">
+                <FaEnvelope />
+              </div>
+              <div className="contact__info-content">
                 <h3>Email</h3>
                 <p>support@fashionstore.com</p>
               </div>
             </div>
 
-            <div className="info-item">
-              <div className="info-icon">⏰</div>
-              <div className="info-content">
+            <div className="contact__info-item">
+              <div className="contact__info-icon">
+                <FaClock />
+              </div>
+              <div className="contact__info-content">
                 <h3>Giờ Làm Việc</h3>
                 <p>Thứ 2 - Thứ 6: 9:00 - 18:00</p>
                 <p>Thứ 7 - Chủ nhật: 10:00 - 17:00</p>
@@ -109,17 +115,17 @@ const Contact = () => {
           </div>
         </div>
 
-        <div className="contact-form-section">
-          <h2 className="contact-section-title">Gửi Tin Nhắn Cho Chúng Tôi</h2>
+        <div className="contact__form-section">
+          <h2 className="contact__section-title">Gửi Tin Nhắn Cho Chúng Tôi</h2>
 
           {submitted && (
-            <div className="success-message">
+            <div className="contact__success-message">
               ✓ Cảm ơn bạn! Chúng tôi đã nhận được tin nhắn của bạn và sẽ liên hệ trong thời gian sớm nhất.
             </div>
           )}
 
-          <div className="contact-form">
-            <div className="form-group">
+          <form className="contact__form" onSubmit={handleSubmit}>
+            <div className="contact__form-group">
               <label htmlFor="name">Họ Và Tên</label>
               <input
                 type="text"
@@ -132,8 +138,8 @@ const Contact = () => {
               />
             </div>
 
-            <div className="form-row">
-              <div className="form-group">
+            <div className="contact__form-row">
+              <div className="contact__form-group">
                 <label htmlFor="email">Email</label>
                 <input
                   type="email"
@@ -146,7 +152,7 @@ const Contact = () => {
                 />
               </div>
 
-              <div className="form-group">
+              <div className="contact__form-group">
                 <label htmlFor="phone">Số Điện Thoại</label>
                 <input
                   type="tel"
@@ -159,7 +165,7 @@ const Contact = () => {
               </div>
             </div>
 
-            <div className="form-group">
+            <div className="contact__form-group">
               <label htmlFor="subject">Chủ Đề</label>
               <input
                 type="text"
@@ -172,7 +178,7 @@ const Contact = () => {
               />
             </div>
 
-            <div className="form-group">
+            <div className="contact__form-group">
               <label htmlFor="message">Tin Nhắn</label>
               <textarea
                 id="message"
@@ -186,17 +192,15 @@ const Contact = () => {
             </div>
 
             <button
-              onClick={handleSubmit}
-              className="submit-button"
+              type="submit"
+              className="contact__submit-button"
               disabled={loading}
             >
-              {loading ? "Đang gửi..." : "Gửi Tin Nhắn"}
+              <FaPaperPlane /> {loading ? "Đang gửi..." : "Gửi Tin Nhắn"}
             </button>
-          </div>
+          </form>
         </div>
       </div>
-
-      <Footer />
     </div>
   );
 };
