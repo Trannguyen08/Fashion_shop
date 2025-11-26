@@ -19,28 +19,28 @@ const Category = () => {
         title: category ? category.toUpperCase() : "SHOP",
         subtitle: "Khám phá bộ sưu tập của chúng tôi",
         type: "category",
-        endpoint: `https://127.0.0.1:8000/product/category/${category}`
+        endpoint: `http://127.0.0.1:8000/product/category/${category}`
       };
     } else if (path === "/best-seller") {
       return {
         title: "BEST SELLER",
         subtitle: "Những sản phẩm bán chạy nhất",
         type: "best-seller",
-        endpoint: "https://127.0.0.1:8000/product/best-seller/"
+        endpoint: "http://127.0.0.1:8000/product/best-seller/"
       };
     } else if (path === "/new-arrival") {
       return {
         title: "NEW ARRIVAL",
         subtitle: "Những sản phẩm mới nhất",
         type: "new-arrival",
-        endpoint: "https://127.0.0.1:8000/product/new-arrival/"
+        endpoint: "http://127.0.0.1:8000/product/new-arrival/"
       };
     } else if (path === "/shop") {
       return {
         title: "ALL PRODUCTS",
         subtitle: "Tất cả sản phẩm",
         type: "shop",
-        endpoint: "https://127.0.0.1:8000/product/all-product/"
+        endpoint: "http://127.0.0.1:8000/product/all-product/"
       };
     }
 

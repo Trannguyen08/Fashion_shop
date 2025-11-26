@@ -17,7 +17,7 @@ const Home = () => {
 
   const fetchHomeProducts = async () => {
     try {
-      const response = await fetch("https://127.0.0.1:8000/product/get_home_products/");
+      const response = await fetch("http://127.0.0.1:8000/product/get_home_products/");
       const data = await response.json();
       setFeaturedProducts(data.featured);
       setNewArrivals(data.new);

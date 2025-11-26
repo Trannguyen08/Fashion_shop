@@ -12,7 +12,7 @@ const StatCard = ({ title, value, colorClass }) => (
 
 const Dashboard = () => {
   return (
-    <div className="container-fluid my-4">
+    <div className="container-fluid">
       <div className="mb-4">
         <h2 className="text-3xl fw-bold text-dark mb-1">
           <span className="me-2">📊</span> Dashboard Tổng Quan

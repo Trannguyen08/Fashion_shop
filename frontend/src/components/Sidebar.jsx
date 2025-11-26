@@ -19,7 +19,7 @@ const navItems = [
 
 const Sidebar = () => {
     return (
-        <div className="bg-dark text-white d-flex flex-column" style={{ width: '300px', height: '100vh', flexShrink: 0 }}>
+        <div className="bg-dark text-white d-flex flex-column" style={{ width: '280px', height: '100vh', flexShrink: 0 }}>
             <div className="p-4 fs-4 fw-bold text-center border-bottom border-secondary">
                 E-commerce Admin
             </div>

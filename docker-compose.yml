@@ -15,6 +15,15 @@ services:
     volumes:
       - db_data:/var/lib/mysql
 
+  redis:
+    image: redis:7.0
+    container_name: fashion-shop-redis
+    restart: always
+    ports:
+      - "${REDIS_PORT}:6379"   # mapping cổng Redis
+    volumes:
+      - redis_data:/data
+
   backend:
     build: ./backend
     container_name: fashion-shop-backend
@@ -30,8 +39,11 @@ services:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PORT: ${REDIS_PORT}
     depends_on:
       - db
+      - redis
 
   frontend:
     build: ./frontend
@@ -47,3 +59,4 @@ services:
 
 volumes:
   db_data:
+  redis_data:

@@ -11,6 +11,9 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
+from decouple import config
+import cloudinary
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -41,26 +44,47 @@ INSTALLED_APPS = [
     'corsheaders',
     'accounts',
     'products',
+    'categories',
     'drf_yasg',
     'cart',
-    'rest_framework_simplejwt'
+    'rest_framework_simplejwt',
+    'cloudinary_storage',
+    'cloudinary',
 ]
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 5,
 }
+
+REDIS_HOST = os.environ.get("REDIS_HOST", "127.0.0.1")
+REDIS_PORT = os.environ.get("REDIS_PORT", "6379")
 
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/1",  # địa chỉ Redis
+        "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}/1",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
-        }
+        },
     }
 }
+
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': config('API_CLOUD_NAME'),
+    'API_KEY': config('API_CLOUD_KEY'),
+    'API_SECRET': config('API_CLOUD_SECRET'),
+}
+
+cloudinary.config(
+    cloud_name=config('API_CLOUD_NAME'),
+    api_key=config('API_CLOUD_KEY'),
+    api_secret=config('API_CLOUD_SECRET'),
+    secure=True
+)
 
 
 AUTH_USER_MODEL = 'accounts.Account'
@@ -132,11 +156,11 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'fashion_shop',
-        'USER': 'user',
-        'PASSWORD': 'user123',
-        'HOST': '127.0.0.1',  # phải trùng tên service trong docker-compose
-        'PORT': '3306',
+        'NAME': config('MYSQL_DATABASE'),
+        'USER': config('MYSQL_USER'),
+        'PASSWORD': config('MYSQL_PASSWORD'),
+        'HOST': config('MYSQL_HOST'),  
+        'PORT': config('MYSQL_PORT', default='3306'),
     }
 }
 
@@ -183,3 +207,11 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CORS_ALLOW_ALL_ORIGINS = True
+
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:5173',   # React dev server
+    'http://127.0.0.1:5173',   # nếu dùng 127.0.0.1
+    'http://localhost:5174',   # các port khác nếu có
+    'http://127.0.0.1:5174',
+]
+

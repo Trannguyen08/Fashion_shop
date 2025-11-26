@@ -1,0 +1,230 @@
+from django.http import JsonResponse
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import AllowAny
+from django.core.cache import cache
+from ..models import Product, Category, ProductVariant, ProductImage
+from ..serializers import ProductSerializer
+import json
+from decouple import config
+
+
+def delete_cache():
+    cache.delete("all_products")
+    cache.delete("home_featured_products")
+    cache.delete("home_new_products")
+    cache.delete("bs_products")
+
+    for key in cache.keys("category_*"):
+        cache.delete(key)
+
+    for key in cache.keys("product_*"):
+        cache.delete(key)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_all_product(request):
+    page_number = request.query_params.get('page', 1)
+    CACHE_KEY = f"all_products_page_{page_number}"
+
+    cached_data = cache.get(CACHE_KEY)
+    if cached_data:
+        return JsonResponse(cached_data)
+
+    products = Product.objects.select_related("category") \
+        .prefetch_related("product_imgs", "product_variants") \
+        .all()
+
+    paginator = PageNumberPagination()
+    paginator.page_size = 5  # mỗi page 5 sản phẩm
+    result_page = paginator.paginate_queryset(products, request)
+
+    serializer = ProductSerializer(result_page, many=True)
+    data = {
+        "products": serializer.data,
+        "total_pages": paginator.page.paginator.num_pages,
+        "current_page": paginator.page.number,
+        "total_items": paginator.page.paginator.count
+    }
+
+    cache.set(CACHE_KEY, data, timeout=86400)  # cache 1 ngày
+    return JsonResponse(data)
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def add_product(request):
+    try:
+        print(config("API_CLOUD_KEY"))
+        print("REQUEST POST:", request.POST)
+        print("REQUEST FILES:", request.FILES)
+
+        # ✅ Dùng request.POST thay vì request.data
+        data = request.POST
+        category = Category.objects.get(id=data.get("category"))
+
+        old_price = data.get("old_price")
+        current_price = data.get("current_price")
+
+        try:
+            old_price = float(old_price) if old_price else None
+            current_price = float(current_price) if current_price else 0
+        except (ValueError, TypeError):
+            return JsonResponse({"error": "Giá không hợp lệ"}, status=400)
+
+        product = Product.objects.create(
+            category=category,
+            name=data.get("name"),
+            old_price=old_price,
+            current_price=current_price,
+            description=data.get("description", ""),
+            status=data.get("status", "Active"),
+            is_new=str(data.get("isNew", "false")).lower() == "true",
+            is_featured=str(data.get("isFeatured", "false")).lower() == "true",
+        )
+
+        main_img = request.FILES.get("mainImage")
+        if main_img:
+            product.product_img = main_img
+            product.save()
+
+        extra_images = request.FILES.getlist("related_images")
+        for img in extra_images:
+            ProductImage.objects.create(product=product, PI_img=img)
+
+        total_stock = 0
+        variants_json = data.get("variants")
+        if variants_json:
+            try:
+                variants = json.loads(variants_json)
+                for i, v in enumerate(variants):
+                    if not all([v.get("sku"), v.get("size"), v.get("color")]):
+                        continue
+                    stock = int(v.get("stock", 0))
+                    total_stock += stock
+                    pv_img = request.FILES.get(f"variant_images_{i}")
+                    ProductVariant.objects.create(
+                        product=product,
+                        sku=v.get("sku"),
+                        size=v.get("size"),
+                        color=v.get("color"),
+                        stock_quantity=stock,
+                        status=v.get("status", "Active"),
+                        PV_img=pv_img,
+                    )
+
+            except json.JSONDecodeError:
+                return JsonResponse({"error": "Variants JSON không hợp lệ"}, status=400)
+
+        product.stock_quantity = total_stock
+        product.update_status_by_stockq()
+        product.save()
+
+        delete_cache()
+
+        return JsonResponse({
+            "message": "Thêm sản phẩm thành công",
+            "product_id": product.id
+        }, status=201)
+
+    except Exception as e:
+        import traceback
+        print("ERROR:", traceback.format_exc())
+        return JsonResponse({"error": f"Lỗi server: {str(e)}"}, status=500)
+
+
+@api_view(['PUT'])
+@permission_classes([AllowAny])
+def update_product(request, product_id):
+    try:
+        data = request.data
+        product = Product.objects.get(id=product_id)
+        category = Category.objects.get(id=data.get("category"))
+
+        # Update basic product info
+        product.category = category
+        product.name = data.get("name")
+        product.old_price = data.get("old_price") or None
+        product.current_price = data.get("current_price")
+        product.description = data.get("description", "")
+        product.status = data.get("status", "Active")
+        product.is_new = str(data.get("isNew")).lower() == "true"
+        product.is_featured = str(data.get("isFeatured")).lower() == "true"
+
+        # MAIN IMAGE
+        main_img = request.FILES.get("mainImage")
+        if main_img:
+            product.product_img = main_img
+        product.save()
+
+        # RESET RELATED IMAGES
+        product.product_imgs.all().delete()
+        new_extra_images = request.FILES.getlist("related_images")
+        for img in new_extra_images:
+            ProductImage.objects.create(product=product, PI_img=img)
+
+        # RESET VARIANTS
+        product.product_variants.all().delete()
+        total_stock = 0
+        variants_json = data.get("variants")
+        if variants_json:
+            variants = json.loads(variants_json)
+            for i, v in enumerate(variants):
+                stock = int(v.get("stock", 0))
+                total_stock += stock
+                PV_img = request.FILES.get(f"variant_images_{i}")
+                ProductVariant.objects.create(
+                    product=product,
+                    sku=v.get("sku"),
+                    size=v.get("size"),
+                    color=v.get("color"),
+                    stock_quantity=stock,
+                    status=v.get("status", "Active"),
+                    PV_img=PV_img,
+                )
+
+        # Update stock
+        product.stock_quantity = total_stock
+        product.update_status_by_stockq()
+        product.save()
+
+        delete_cache()
+
+        return JsonResponse({
+            "message": "Cập nhật sản phẩm thành công!",
+            "product_id": product.id
+        }, status=200)
+
+    except Product.DoesNotExist:
+        return JsonResponse({"error": "Product không tồn tại"}, status=404)
+    except Category.DoesNotExist:
+        return JsonResponse({"error": "Category không tồn tại"}, status=400)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+@api_view(['PUT'])
+@permission_classes([AllowAny])
+def update_status(request, product_id):
+    try:
+        status_value = request.data.get("status")
+
+        if status_value is None:
+            return JsonResponse({"error": "Thiếu status"}, status=400)
+
+        product = Product.objects.get(id=product_id)
+        product.status = status_value
+        product.save()
+
+        delete_cache()
+
+        return JsonResponse({
+            "message": "Cập nhật trạng thái thành công!",
+            "product_id": product.id
+        }, status=200)
+
+    except Product.DoesNotExist:
+        return JsonResponse({"error": "Product không tồn tại"}, status=404)
+
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)

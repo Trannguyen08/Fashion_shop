@@ -3,7 +3,7 @@ import React from 'react';
 const AdminHeader = () => {
   return (
     // flex justify-between items-center p-4 bg-white shadow-md
-    <header className="d-flex justify-content-between align-items-center p-3 bg-white shadow-sm border-bottom">
+    <header className="d-flex justify-content-between align-items-center p-2 bg-white shadow-sm border-bottom">
       
       {/* text-xl font-semibold text-gray-700 */}
       <div className="fs-5 fw-semibold text-secondary">
