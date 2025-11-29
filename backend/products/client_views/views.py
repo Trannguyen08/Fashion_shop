@@ -14,7 +14,7 @@ def get_all_product(request):
     if alls is None:
         products = Product.objects.select_related("category").prefetch_related(
             'product_imgs','product_variants'
-        ).all()
+        ).filter(status="Active")
         alls = ProductSerializer(products, many=True).data
         cache.set(ALL_PRODUCTS_KEY, alls, timeout=86400)
 
@@ -24,7 +24,7 @@ def get_all_product(request):
                 status=200
             )
     return JsonResponse(
-         {"products": all},
+         {"products": alls},
          status=200,
          safe=False
     )

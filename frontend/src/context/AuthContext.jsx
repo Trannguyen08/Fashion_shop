@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import {jwtDecode} from "jwt-decode";
 
 const AuthContext = createContext(null);
 const REFRESH_URL = "/account/token/refresh/"; 
@@ -103,6 +104,30 @@ export const AuthProvider = ({ children }) => {
         setupAxiosInterceptors({ accessToken, refreshAccessToken, logout });
 
     }, [accessToken, refreshAccessToken, logout]); // Re-run khi token/hàm thay đổi
+
+    useEffect(() => {
+        if (!accessToken) return;
+
+        // Giải mã token
+        const { exp } = jwtDecode(accessToken);
+        const expiresInMs = exp * 1000 - Date.now();
+
+        // Nếu còn < 2 phút thì refresh luôn
+        const refreshBefore = expiresInMs - 2 * 60 * 1000;
+
+        if (refreshBefore > 0) {
+            const timer = setTimeout(() => {
+                refreshAccessToken();
+            }, refreshBefore);
+
+            return () => clearTimeout(timer);
+        } else {
+            // Token gần hết hạn -> refresh ngay
+            refreshAccessToken();
+        }
+
+    }, [accessToken]);
+
 
     // Hàm login sẽ được gọi từ Login.js
     const login = (data) => {

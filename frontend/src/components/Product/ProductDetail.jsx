@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Header from '../Header/Header';
-import Footer from '../Footer/Footer';
-import useCart from '../../hooks/useCart'
+import { useCartContext } from '../../context/CartContext';
 import { Star } from "lucide-react";
 import './ProductDetail.css';
 
@@ -14,7 +12,7 @@ const ProductDetail = ({ product }) => {
   const [quantity, setQuantity] = useState(1);
   const [mainImage, setMainImage] = useState(null);
   
-  const { addToCart } = useCart();
+  const { addToCart } = useCartContext();
 
   useEffect(() => {
     if (product) {
@@ -131,7 +129,6 @@ const ProductDetail = ({ product }) => {
 
   return (
     <div style={{ overflowX: 'hidden' }}>
-      <Header />
       <div className="product-detail-container">
         <div className="product-detail">
 
@@ -294,7 +291,6 @@ const ProductDetail = ({ product }) => {
           </div>
         </div>
       </div>
-      <Footer />
     </div>
   );
 };

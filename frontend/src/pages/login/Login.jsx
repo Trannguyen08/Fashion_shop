@@ -4,7 +4,7 @@ import styles from "./Login.module.css";
 import axios from 'axios'; 
 import { useAuth } from '../../context/AuthContext';
 
-const LOGIN_URL = "/account/login/";
+const LOGIN_URL = "http://127.0.0.1:8000/account/login/";
 
 export default function Login() {
   const [username, setUsername] = useState("");

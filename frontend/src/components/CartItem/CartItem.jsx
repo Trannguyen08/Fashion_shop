@@ -1,10 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { Trash2 } from 'lucide-react';
-import useCart from '../../hooks/useCart';
+import { useCartContext } from '../../context/CartContext';
 import './CartItem.css';
 
 const CartItem = ({ item, isSelected, onCheckbox, onQuantityChange, onDelete }) => {
-  const { updateCartItem, removeFromCart } = useCart();
+  const { updateCartItem, removeFromCart } = useCartContext();
   
   // ⏱️ Debounce: chỉ gọi API sau khi user dừng tương tác
   const debounceTimer = useRef(null);
@@ -36,19 +36,19 @@ const CartItem = ({ item, isSelected, onCheckbox, onQuantityChange, onDelete }) 
   };
 
   // ❌ Xử lý xóa sản phẩm
-  const handleDelete = async (productId, productVariantId) => {
+  const handleDelete = async (productId) => {
     if (!window.confirm('Bạn có chắc muốn xóa sản phẩm này?')) {
       return;
     }
 
-    const success = await removeFromCart(productId, productVariantId);
+    const success = await removeFromCart(productId);
     if (success) {
       onDelete?.(productId);
       console.log("✅ Xóa sản phẩm thành công");
     }
   };
 
-  const itemTotal = (item.current_price || item.price) * item.quantity;
+  const itemTotal = item.total_price;
 
   return (
     <div className="cart-item">
@@ -125,7 +125,7 @@ const CartItem = ({ item, isSelected, onCheckbox, onQuantityChange, onDelete }) 
       <div className="item-action">
         <button 
           className="delete-btn"
-          onClick={() => handleDelete(item.id, item.product_variant_id)}
+          onClick={() => handleDelete(item.id)}
           title="Xóa sản phẩm"
           disabled={isUpdating}
         >

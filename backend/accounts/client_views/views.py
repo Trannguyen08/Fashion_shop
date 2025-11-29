@@ -1,10 +1,12 @@
+from django.core.cache import cache
 from django.http import JsonResponse
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from django.db.models import Q
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
-from .models import Account, User
+from accounts.models import Account, User
+from accounts.serializers import UserSerializer
 
 
 @api_view(['POST'])
@@ -116,3 +118,49 @@ def refresh_token_view(request):
         }, status=200)
     except TokenError as e:
         return JsonResponse({'error': f'Refresh Token không hợp lệ: {str(e)}'}, status=401)
+
+
+@api_view(['GET'])
+def get_user_info(request, account_id):
+    try:
+        cache_key = f"user_{account_id}"
+        cached_data = cache.get(cache_key)
+
+        if cached_data:
+            return JsonResponse({"user": cached_data}, status=200)
+
+        user = User.objects.get(account_id=account_id)
+        serializer = UserSerializer(user)
+        cache.set(cache_key, serializer.data, timeout=86400)
+
+        return JsonResponse({"user": serializer.data}, status=200)
+
+    except User.DoesNotExist:
+        return JsonResponse({"error": "User không tồn tại"}, status=404)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+@api_view(['PUT'])
+def update_user_info(request, account_id):
+    try:
+        user = User.objects.get(account_id=account_id)
+        data = request.data
+
+        user.full_name = data.get("full_name", user.full_name)
+        user.phone = data.get("phone", user.phone)
+        user.email = data.get("email", user.email)
+        user.save()
+
+        cache_key = f"user_{account_id}"
+        cache.delete(cache_key)
+
+        serializer = UserSerializer(user)
+        return JsonResponse({"user": serializer.data, "message": "Cập nhật thành công"}, status=200)
+
+    except User.DoesNotExist:
+        return JsonResponse({"error": "User không tồn tại"}, status=404)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+

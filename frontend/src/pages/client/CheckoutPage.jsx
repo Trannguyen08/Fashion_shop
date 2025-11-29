@@ -1,12 +1,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import Checkout from './Checkout';
-import useCart from '../../hooks/useCart';
+import { useCartContext } from '../../context/CartContext';
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
-  const { getSelectedItems, getTotalPrice } = useCart();
-
+  const { getSelectedItems, getTotalPrice } = useCartContext();
   const selectedItems = getSelectedItems();
   const totalAmount = getTotalPrice();
 

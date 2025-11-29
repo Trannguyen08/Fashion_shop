@@ -3,23 +3,13 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny
 from django.core.cache import cache
+from yaml import serialize
+
 from ..models import Product, Category, ProductVariant, ProductImage
 from ..serializers import ProductSerializer
 import json
 from decouple import config
-
-
-def delete_cache():
-    cache.delete("all_products")
-    cache.delete("home_featured_products")
-    cache.delete("home_new_products")
-    cache.delete("bs_products")
-
-    for key in cache.keys("category_*"):
-        cache.delete(key)
-
-    for key in cache.keys("product_*"):
-        cache.delete(key)
+from utils.delete_product_cache import delete_cache
 
 
 @api_view(['GET'])
@@ -120,11 +110,12 @@ def add_product(request):
         product.update_status_by_stockq()
         product.save()
 
+        serializer = ProductSerializer(product)
         delete_cache()
 
         return JsonResponse({
             "message": "Thêm sản phẩm thành công",
-            "product_id": product.id
+            **serializer.data
         }, status=201)
 
     except Exception as e:
@@ -137,6 +128,8 @@ def add_product(request):
 @permission_classes([AllowAny])
 def update_product(request, product_id):
     try:
+        print("REQUEST POST:", request.POST)
+        print("REQUEST FILES:", request.FILES)
         data = request.data
         product = Product.objects.get(id=product_id)
         category = Category.objects.get(id=data.get("category"))
@@ -147,23 +140,41 @@ def update_product(request, product_id):
         product.old_price = data.get("old_price") or None
         product.current_price = data.get("current_price")
         product.description = data.get("description", "")
-        product.status = data.get("status", "Active")
+        product.status = data.get("status")
         product.is_new = str(data.get("isNew")).lower() == "true"
         product.is_featured = str(data.get("isFeatured")).lower() == "true"
 
-        # MAIN IMAGE
+        # MAIN IMAGE - Chỉ update nếu có file mới
         main_img = request.FILES.get("mainImage")
         if main_img:
             product.product_img = main_img
+        # Nếu không có file mới nhưng có mainImage_url thì giữ nguyên (không làm gì)
+        # Nếu cả 2 đều không có thì có thể xóa ảnh chính
+        elif not data.get("mainImage_url"):
+            product.product_img = None
+
         product.save()
 
-        # RESET RELATED IMAGES
+        # RELATED IMAGES - Xử lý cả ảnh cũ và mới
         product.product_imgs.all().delete()
+
+        # Thêm lại các ảnh cũ (nếu có)
+        existing_images = data.get("existing_related_images")
+        if existing_images:
+            try:
+                existing_urls = json.loads(existing_images)
+                for url in existing_urls:
+                    # Tạo ProductImage với URL cũ (không upload lại)
+                    ProductImage.objects.create(product=product, PI_img=url)
+            except json.JSONDecodeError:
+                pass
+
+        # Thêm các ảnh mới được upload
         new_extra_images = request.FILES.getlist("related_images")
         for img in new_extra_images:
             ProductImage.objects.create(product=product, PI_img=img)
 
-        # RESET VARIANTS
+        # VARIANTS - Xử lý cả ảnh cũ và mới
         product.product_variants.all().delete()
         total_stock = 0
         variants_json = data.get("variants")
@@ -172,7 +183,21 @@ def update_product(request, product_id):
             for i, v in enumerate(variants):
                 stock = int(v.get("stock", 0))
                 total_stock += stock
-                PV_img = request.FILES.get(f"variant_images_{i}")
+
+                # Ưu tiên file mới, nếu không có thì dùng URL cũ
+                PV_img_file = request.FILES.get(f"variant_images_{i}")
+                PV_img_url = v.get("image_url")
+
+                if PV_img_file:
+                    # Có file mới → upload file
+                    PV_img = PV_img_file
+                elif PV_img_url:
+                    # Không có file mới nhưng có URL cũ → giữ nguyên URL
+                    PV_img = PV_img_url
+                else:
+                    # Không có gì cả
+                    PV_img = None
+
                 ProductVariant.objects.create(
                     product=product,
                     sku=v.get("sku"),
@@ -188,11 +213,12 @@ def update_product(request, product_id):
         product.update_status_by_stockq()
         product.save()
 
+        serializer = ProductSerializer(product)
         delete_cache()
 
         return JsonResponse({
             "message": "Cập nhật sản phẩm thành công!",
-            "product_id": product.id
+            **serializer.data
         }, status=200)
 
     except Product.DoesNotExist:

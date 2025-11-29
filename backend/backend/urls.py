@@ -20,12 +20,13 @@ schema_view = get_schema_view(
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('account/', include('accounts.urls')),
+    path('account/', include('accounts.client_views.urls')),
+    path('api/account/', include('accounts.admin_views.urls')),
     path('product/', include('products.client_views.urls')),
     path('api/product/', include('products.admin_views.urls')),
-    # path('category/', include('categories.client_views.urls')),
     path('api/category/', include('categories.admin_views.urls')),
     path('cart/', include('cart.urls')),
+    path('customers/', include('customers.urls')),
 
     # Swagger UI
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),

@@ -22,14 +22,14 @@ const CartSummary = ({ selectedItems = [], totalAmount = 0, itemCount = 0, onChe
               <div key={`${item.id}-${item.product_variant_id}`} className="summary-item">
                 <div className="summary-item-info">
                   <p className="summary-item-name">
-                    {item.name?.substring(0, 25)}...
+                    {item.product_name?.substring(0, 25)}...
                   </p>
                   <p className="summary-item-detail">
                     x{item.quantity}
                   </p>
                 </div>
                 <p className="summary-item-price">
-                  {((item.current_price || item.price) * item.quantity).toLocaleString('vi-VN')}đ
+                  {item.total_price.toLocaleString('vi-VN')}đ
                 </p>
               </div>
             ))}

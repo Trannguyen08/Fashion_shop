@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Profile.css";
-import { FaUpload, FaSignOutAlt, FaEdit, FaLock, FaBox, FaUser, FaKey } from "react-icons/fa";
+import { FaUpload, FaSignOutAlt, FaEdit, FaBox, FaUser, FaKey, FaTrash, FaPlus, FaTimes } from "react-icons/fa";
 import defaultAvatar from "../../assets/images/user.png";
+import AddressService from '../../services/AddressService';
+import UserService from '../../services/UserService';
 
 // Data tỉnh/thành phố và phường/xã (ví dụ)
 const PROVINCES = {
@@ -25,6 +27,16 @@ const Profile = () => {
     fullName: "",
     email: "",
     phone: "",
+  });
+
+  const [addresses, setAddresses] = useState([]);
+  const [defaultAddressId, setDefaultAddressId] = useState(null);
+  const [showAddressForm, setShowAddressForm] = useState(false);
+  const [editingAddressId, setEditingAddressId] = useState(null);
+  
+  const [addressFormData, setAddressFormData] = useState({
+    recipientName: "",
+    recipientPhone: "",
     province: "",
     district: "",
     address: "",
@@ -39,31 +51,62 @@ const Profile = () => {
   const [orders, setOrders] = useState([]);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
+    const initProfile = async () => {
       try {
-        const userData = JSON.parse(storedUser);
-        setUser(userData);
-        setFormData({
-          fullName: userData.fullName || "",
-          email: userData.email || "",
-          phone: userData.phone || "",
-          province: userData.province || "",
-          district: userData.district || "",
-          address: userData.address || ""
-        });
-        
-        const storedOrders = localStorage.getItem("orders");
-        if (storedOrders) {
-          setOrders(JSON.parse(storedOrders));
-        }
+        // Lấy user hiện tại từ UserService (API)
+        const result = await UserService.getUserInfo(); 
+        if (result.success) {
+          const userData = result.data;
+          setUser(userData);
+          setFormData({
+            fullName: userData.full_name || "",
+            email: userData.email || "",
+            phone: userData.phone || "",
+          });
+
+          // Load địa chỉ từ API
+          await loadAddresses();
+
+          // Load orders từ localStorage (hoặc API nếu có)
+          const storedOrders = localStorage.getItem("orders");
+          if (storedOrders) {
+            setOrders(JSON.parse(storedOrders));
+          }
+
+        } 
       } catch (error) {
         console.error("Lỗi khi tải user:", error);
+        navigate("/login");
       }
-    } else {
-      navigate("/login");
-    }
+    };
+
+    initProfile();
   }, [navigate]);
+
+
+  const loadAddresses = async () => {
+    setLoading(true);
+    const result = await AddressService.getAllAddresses();
+    
+    if (result.success) {
+      // Transform data từ backend format sang frontend format
+      const transformedAddresses = result.data.map(addr => 
+        AddressService.transformAddressFromBackend(addr)
+      );
+      setAddresses(transformedAddresses);
+      
+      // Tìm địa chỉ mặc định
+      const defaultAddr = transformedAddresses.find(addr => addr.isDefault);
+      setDefaultAddressId(defaultAddr?.id || null);
+      
+      // Sync với localStorage
+      AddressService.syncToLocalStorage(result.data);
+    } else {
+      setMessage(result.error);
+      setTimeout(() => setMessage(""), 3000);
+    }
+    setLoading(false);
+  };
 
   const handleAvatarUpload = (e) => {
     const file = e.target.files[0];
@@ -87,9 +130,14 @@ const Profile = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleAddressFormChange = (e) => {
+    const { name, value } = e.target;
+    setAddressFormData(prev => ({ ...prev, [name]: value }));
+  };
+
   const handleProvinceChange = (e) => {
     const province = e.target.value;
-    setFormData(prev => ({ ...prev, province, district: "" }));
+    setAddressFormData(prev => ({ ...prev, province, district: "" }));
   };
 
   const handlePasswordChange = (e) => {
@@ -97,7 +145,7 @@ const Profile = () => {
     setPasswordData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleUpdateInfo = (e) => {
+  const handleUpdateInfo = async (e) => {
     e.preventDefault();
     setLoading(true);
 
@@ -107,14 +155,165 @@ const Profile = () => {
       return;
     }
 
-    const updatedUser = { ...user, ...formData };
-    setUser(updatedUser);
-    localStorage.setItem("user", JSON.stringify(updatedUser));
-    setLoading(false);
-    setEditMode(false);
-    setMessage("Cập nhật thông tin thành công!");
-    setTimeout(() => setMessage(""), 3000);
+    try {
+      const result = await UserService.updateUserInfo(formData);
+      if (result.success) {
+        setUser(result.data);
+        setFormData({
+          fullName: result.data.full_name,
+          email: result.data.email,
+          phone: result.data.phone
+        });
+        setMessage(result.message);
+        setEditMode(false);
+      } else {
+        setMessage(result.error);
+      }
+    } catch (err) {
+      console.error("Lỗi cập nhật thông tin:", err);
+      setMessage("Có lỗi xảy ra, vui lòng thử lại");
+    } finally {
+      setTimeout(() => setMessage(""), 3000);
+      setLoading(false);
+    }
   };
+
+  const handleAddAddress = () => {
+    setShowAddressForm(true);
+    setEditingAddressId(null);
+    setAddressFormData({
+      recipientName: "",
+      recipientPhone: "",
+      province: "",
+      district: "",
+      address: "",
+    });
+  };
+
+  const handleEditAddress = (address) => {
+    setShowAddressForm(true);
+    setEditingAddressId(address.id);
+    setAddressFormData({
+      recipientName: address.recipientName,
+      recipientPhone: address.recipientPhone,
+      province: address.province,
+      district: address.district,
+      address: address.address,
+    });
+  };
+
+  const handleSaveAddress = async (e) => {
+    e.preventDefault();
+
+    // --- Validate form ---
+    const { recipientName, recipientPhone, province, district } = addressFormData;
+    if (!recipientName || !recipientPhone || !province || !district) {
+        showMessage("Vui lòng điền đầy đủ thông tin địa chỉ!");
+        return;
+    }
+
+    setLoading(true);
+
+    try {
+        const apiCall = editingAddressId
+            ? AddressService.updateAddress(editingAddressId, addressFormData)
+            : AddressService.addAddress(addressFormData);
+
+        const result = await apiCall;
+
+        if (!result.success) {
+            showMessage(result.error);
+            return;
+        }
+
+        const updatedAddress = AddressService.transformAddressFromBackend(result.data);
+
+        setAddresses(prev => {
+            if (editingAddressId) {
+                // Update địa chỉ cũ
+                return prev.map(addr =>
+                    addr.id === editingAddressId ? updatedAddress : addr
+                );
+            }
+            // Thêm mới
+            return [...prev, updatedAddress];
+        });
+
+        // --- Nếu địa chỉ mới là mặc định thì cập nhật ---
+        if (updatedAddress.isDefault) {
+            setDefaultAddressId(updatedAddress.id);
+        }
+
+        // --- UI feedback ---
+        setShowAddressForm(false);
+        showMessage(result.message);
+        
+    } catch (err) {
+        console.error("Lỗi khi lưu địa chỉ:", err);
+        showMessage("Có lỗi xảy ra. Vui lòng thử lại sau.");
+    } finally {
+        setLoading(false);
+    }
+  };
+
+
+  const handleDeleteAddress = async (addressId) => {
+    if (!window.confirm("Bạn có chắc chắn muốn xóa địa chỉ này?")) return;
+
+    setLoading(true);
+
+    try {
+      const result = await AddressService.deleteAddress(addressId);
+
+      if (result.success) {
+        // Xóa khỏi danh sách địa chỉ
+        setAddresses(prev => prev.filter(addr => addr.id !== addressId));
+
+        // Nếu xóa địa chỉ mặc định → reset
+        if (defaultAddressId === addressId) {
+          setDefaultAddressId(null);
+        }
+
+        setMessage(result.message);
+      } else {
+        setMessage(result.error || "Xóa địa chỉ thất bại");
+      }
+    } catch (error) {
+      setMessage("Có lỗi xảy ra, vui lòng thử lại");
+    } finally {
+      // Clear message sau 3s
+      setTimeout(() => setMessage(""), 3000);
+      setLoading(false);
+    }
+  };
+
+  const handleSetDefaultAddress = async (addressId) => {
+    setLoading(true);
+
+    try {
+      const result = await AddressService.setDefaultAddress(addressId);
+
+      if (result.success) {
+        setAddresses(prev =>
+          prev.map(addr => ({
+            ...addr,
+            isDefault: addr.id === addressId
+          }))
+        );
+
+        setDefaultAddressId(addressId);
+        setMessage(result.message);
+      } else {
+        setMessage(result.error || "Không thể đặt mặc định");
+      }
+    } catch (error) {
+      setMessage("Có lỗi xảy ra, vui lòng thử lại");
+    } finally {
+      setTimeout(() => setMessage(""), 3000);
+      setLoading(false);
+    }
+  };
+
 
   const handleChangePassword = (e) => {
     e.preventDefault();
@@ -156,8 +355,8 @@ const Profile = () => {
     return <div className="profile-loading">Đang tải...</div>;
   }
 
-  const currentProvinceDistricts = formData.province && PROVINCES[formData.province] 
-    ? PROVINCES[formData.province].districts 
+  const currentProvinceDistricts = addressFormData.province && PROVINCES[addressFormData.province] 
+    ? PROVINCES[addressFormData.province].districts 
     : [];
 
   return (
@@ -209,144 +408,229 @@ const Profile = () => {
 
         {/* MAIN CONTENT */}
         <main className="profile-content">
-          {message && <div className="alert alert-success">{message}</div>}
-
           {/* INFO TAB */}
           {activeTab === "info" && (
             <div className="tab-content">
-              <div className="section-header">
-                <h2>Thông tin tài khoản</h2>
-                <button
-                  className="edit-btn"
-                  onClick={() => setEditMode(!editMode)}
-                >
-                  <FaEdit /> {editMode ? "Hủy" : "Chỉnh sửa"}
-                </button>
+              <div className="info-grid-layout">
+                {/* THÔNG TIN CÁ NHÂN */}
+                <div className="info-section">
+                  <div className="section-header">
+                    <h2>Thông tin cá nhân</h2>
+                    <button
+                      className="edit-btn"
+                      onClick={() => setEditMode(!editMode)}
+                    >
+                      <FaEdit /> {editMode ? "Hủy" : "Chỉnh sửa"}
+                    </button>
+                  </div>
+
+                  {editMode ? (
+                    <form onSubmit={handleUpdateInfo} className="form-edit">
+                      <div className="form-group">
+                        <label>Họ và tên *</label>
+                        <input
+                          type="text"
+                          name="fullName"
+                          value={formData.fullName}
+                          onChange={handleInputChange}
+                          placeholder="Nhập họ và tên"
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label>Email *</label>
+                        <input
+                          type="email"
+                          name="email"
+                          value={formData.email}
+                          onChange={handleInputChange}
+                          placeholder="Nhập email"
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label>Số điện thoại *</label>
+                        <input
+                          type="tel"
+                          name="phone"
+                          value={formData.phone}
+                          onChange={handleInputChange}
+                          placeholder="Nhập số điện thoại"
+                        />
+                      </div>
+
+                      <button type="submit" className="submit-btn" disabled={loading}>
+                        {loading ? "Đang lưu..." : "Lưu thay đổi"}
+                      </button>
+                    </form>
+                  ) : (
+                    <div className="info-card">
+                      <div className="info-item">
+                        <span className="label">Họ và tên:</span>
+                        <span className="value">{formData.fullName || "Chưa cập nhật"}</span>
+                      </div>
+                      <div className="info-item">
+                        <span className="label">Email:</span>
+                        <span className="value">{formData.email || "Chưa cập nhật"}</span>
+                      </div>
+                      <div className="info-item">
+                        <span className="label">Số điện thoại:</span>
+                        <span className="value">{formData.phone || "Chưa cập nhật"}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* DANH SÁCH ĐỊA CHỈ */}
+                <div className="address-section">
+                  <div className="section-header">
+                    <h2>Địa chỉ giao hàng</h2>
+                    <button className="add-btn" onClick={handleAddAddress}>
+                      <FaPlus /> Thêm địa chỉ
+                    </button>
+                  </div>
+
+                  {addresses.length > 0 ? (
+                    <div className="address-list">
+                      {addresses.map((address) => (
+                        <div key={address.id} className="address-card">
+                          <div className="address-header">
+                            <input
+                              type="radio"
+                              name="defaultAddress"
+                              checked={defaultAddressId === address.id}
+                              onChange={() => handleSetDefaultAddress(address.id)}
+                              className="address-radio"
+                            />
+                            <div className="address-info">
+                              <div className="address-recipient">
+                                <strong>{address.recipientName}</strong>
+                                {defaultAddressId === address.id && (
+                                  <span className="default-badge">Mặc định</span>
+                                )}
+                              </div>
+                              <p className="address-phone">{address.recipientPhone}</p>
+                              <p className="address-detail">
+                                {address.address && `${address.address}, `}
+                                {address.district}, {PROVINCES[address.province]?.name}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="address-actions">
+                            <button 
+                              className="action-btn edit"
+                              onClick={() => handleEditAddress(address)}
+                            >
+                              <FaEdit /> Sửa
+                            </button>
+                            <button 
+                              className="action-btn delete"
+                              onClick={() => handleDeleteAddress(address.id)}
+                            >
+                              <FaTrash /> Xóa
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="empty-state">
+                      <p>Chưa có địa chỉ giao hàng. Vui lòng thêm địa chỉ mới.</p>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {editMode ? (
-                <form onSubmit={handleUpdateInfo} className="form-edit-layout">
-                  <div className="form-section">
-                    <h3 className="form-section-title">Thông tin cá nhân</h3>
-                    
-                    <div className="form-group">
-                      <label>Họ và tên *</label>
-                      <input
-                        type="text"
-                        name="fullName"
-                        value={formData.fullName}
-                        onChange={handleInputChange}
-                        placeholder="Nhập họ và tên"
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label>Email *</label>
-                      <input
-                        type="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleInputChange}
-                        placeholder="Nhập email"
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label>Số điện thoại *</label>
-                      <input
-                        type="tel"
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleInputChange}
-                        placeholder="Nhập số điện thoại"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="form-section">
-                    <h3 className="form-section-title">Địa chỉ giao hàng</h3>
-
-                    <div className="form-group">
-                      <label>Tỉnh/Thành phố</label>
-                      <select
-                        name="province"
-                        value={formData.province}
-                        onChange={handleProvinceChange}
+              {/* FORM THÊM/SỬA ĐỊA CHỈ */}
+              {showAddressForm && (
+                <div className="modal-overlay">
+                  <div className="modal-content">
+                    <div className="modal-header">
+                      <h3>{editingAddressId ? "Sửa địa chỉ" : "Thêm địa chỉ mới"}</h3>
+                      <button 
+                        className="close-btn"
+                        onClick={() => setShowAddressForm(false)}
                       >
-                        <option value="">-- Chọn tỉnh/thành phố --</option>
-                        {Object.entries(PROVINCES).map(([key, value]) => (
-                          <option key={key} value={key}>{value.name}</option>
-                        ))}
-                      </select>
+                        <FaTimes />
+                      </button>
                     </div>
 
-                    <div className="form-group">
-                      <label>Phường/Xã</label>
-                      <select
-                        name="district"
-                        value={formData.district}
-                        onChange={handleInputChange}
-                        disabled={!formData.province}
-                      >
-                        <option value="">-- Chọn phường/xã --</option>
-                        {currentProvinceDistricts.map((district) => (
-                          <option key={district} value={district}>{district}</option>
-                        ))}
-                      </select>
-                    </div>
+                    <form onSubmit={handleSaveAddress} className="address-form">
+                      <div className="form-group">
+                        <label>Tên người nhận *</label>
+                        <input
+                          type="text"
+                          name="recipientName"
+                          value={addressFormData.recipientName}
+                          onChange={handleAddressFormChange}
+                          placeholder="Nhập tên người nhận"
+                        />
+                      </div>
 
-                    <div className="form-group">
-                      <label>Địa chỉ cụ thể</label>
-                      <input
-                        type="text"
-                        name="address"
-                        value={formData.address}
-                        onChange={handleInputChange}
-                        placeholder="Nhập số nhà, tên đường... (tùy chọn)"
-                      />
-                    </div>
-                  </div>
+                      <div className="form-group">
+                        <label>Số điện thoại người nhận *</label>
+                        <input
+                          type="tel"
+                          name="recipientPhone"
+                          value={addressFormData.recipientPhone}
+                          onChange={handleAddressFormChange}
+                          placeholder="Nhập số điện thoại"
+                        />
+                      </div>
 
-                  <button type="submit" className="submit-btn" disabled={loading}>
-                    {loading ? "Đang lưu..." : "Lưu thay đổi"}
-                  </button>
-                </form>
-              ) : (
-                <div className="info-display">
-                  <div className="info-card">
-                    <h3>Thông tin cá nhân</h3>
-                    <div className="info-item">
-                      <span className="label">Họ và tên:</span>
-                      <span className="value">{formData.fullName || "Chưa cập nhật"}</span>
-                    </div>
-                    <div className="info-item">
-                      <span className="label">Email:</span>
-                      <span className="value">{formData.email || "Chưa cập nhật"}</span>
-                    </div>
-                    <div className="info-item">
-                      <span className="label">Số điện thoại:</span>
-                      <span className="value">{formData.phone || "Chưa cập nhật"}</span>
-                    </div>
-                  </div>
+                      <div className="form-group">
+                        <label>Tỉnh/Thành phố *</label>
+                        <select
+                          name="province"
+                          value={addressFormData.province}
+                          onChange={handleProvinceChange}
+                        >
+                          <option value="">-- Chọn tỉnh/thành phố --</option>
+                          {Object.entries(PROVINCES).map(([key, value]) => (
+                            <option key={key} value={key}>{value.name}</option>
+                          ))}
+                        </select>
+                      </div>
 
-                  <div className="info-card">
-                    <h3>Địa chỉ giao hàng</h3>
-                    <div className="info-item">
-                      <span className="label">Tỉnh/Thành phố:</span>
-                      <span className="value">
-                        {formData.province && PROVINCES[formData.province] 
-                          ? PROVINCES[formData.province].name 
-                          : "Chưa cập nhật"}
-                      </span>
-                    </div>
-                    <div className="info-item">
-                      <span className="label">Phường/Xã:</span>
-                      <span className="value">{formData.district || "Chưa cập nhật"}</span>
-                    </div>
-                    <div className="info-item">
-                      <span className="label">Địa chỉ cụ thể:</span>
-                      <span className="value">{formData.address || "Chưa cập nhật"}</span>
-                    </div>
+                      <div className="form-group">
+                        <label>Phường/Xã *</label>
+                        <select
+                          name="district"
+                          value={addressFormData.district}
+                          onChange={handleAddressFormChange}
+                          disabled={!addressFormData.province}
+                        >
+                          <option value="">-- Chọn phường/xã --</option>
+                          {currentProvinceDistricts.map((district) => (
+                            <option key={district} value={district}>{district}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="form-group">
+                        <label>Địa chỉ cụ thể</label>
+                        <input
+                          type="text"
+                          name="address"
+                          value={addressFormData.address}
+                          onChange={handleAddressFormChange}
+                          placeholder="Nhập số nhà, tên đường..."
+                        />
+                      </div>
+
+                      <div className="form-actions">
+                        <button 
+                          type="button" 
+                          className="cancel-btn"
+                          onClick={() => setShowAddressForm(false)}
+                        >
+                          Hủy
+                        </button>
+                        <button type="submit" className="submit-btn">
+                          {editingAddressId ? "Cập nhật" : "Thêm địa chỉ"}
+                        </button>
+                      </div>
+                    </form>
                   </div>
                 </div>
               )}

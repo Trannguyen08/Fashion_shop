@@ -50,20 +50,25 @@ const ProductFormModal = ({ show, handleClose, productData, handleSave }) => {
     }, []);
 
     useEffect(() => {
+        console.log("useEffect triggered, isEditMode:", isEditMode);
+        console.log("Raw productData:", productData);
+
         if (isEditMode && productData) {
             // relatedImages từ backend là link
-            const relatedImages = (productData.relatedImages || []).map(img => ({
+            const relatedImages = (productData.product_imgs || []).map(img => ({
                 file: null, // chưa chọn file mới
-                url: img   // link Cloudinary
+                url: img.PI_img   // link Cloudinary
             }));
+            console.log("Mapped relatedImages:", relatedImages);
 
             // variants map
             const variants = (productData.variants || []).map(v => ({
                 ...v,
-                image: v.image ? { file: null, url: v.image } : null
+                image: v.PV_img ? { file: null, url: v.PV_img } : null
             }));
+            console.log("Mapped variants:", variants);
 
-            setFormData({
+            const newFormData = {
                 ...defaultProductState,
                 ...productData,
                 basePrice: String(productData.old_price || productData.basePrice),
@@ -72,9 +77,14 @@ const ProductFormModal = ({ show, handleClose, productData, handleSave }) => {
                 mainImage: productData.mainImage ? { file: null, url: productData.mainImage } : null,
                 relatedImages,
                 variants
-            });
+            };
+
+            console.log("Final formData to set:", newFormData);
+
+            setFormData(newFormData);
         }
     }, [productData]);
+
 
     const handleChange = (e) => setFormData({ ...formData, [e.target.id]: e.target.value });
     const handleMainImageChange = (e) => setFormData({ ...formData, mainImage: { file: e.target.files[0], url: null } });
@@ -93,6 +103,7 @@ const ProductFormModal = ({ show, handleClose, productData, handleSave }) => {
     const handleRemoveVariant = (index) => setFormData({ ...formData, variants: formData.variants.filter((_, i) => i !== index) });
 
     // Save product
+    // Save product
     const saveProduct = async (productData, productId = null) => {
         const fd = new FormData();
 
@@ -106,28 +117,42 @@ const ProductFormModal = ({ show, handleClose, productData, handleSave }) => {
         fd.append("isNew", productData.isNew ? "true" : "false");
         fd.append("isFeatured", productData.isFeatured ? "true" : "false");
 
-        // Main Image
-        if (productData.mainImage?.file) fd.append("mainImage", productData.mainImage.file);
+        // Main Image - nếu không upload mới thì gửi link cũ
+        if (productData.mainImage?.file) {
+            fd.append("mainImage", productData.mainImage.file);
+        } else if (productData.mainImage?.url) {
+            fd.append("mainImage_url", productData.mainImage.url);
+        }
 
-        // Related Images
+        // Related Images - gửi cả file mới và link cũ
+        const existingRelatedImages = [];
         productData.relatedImages.forEach(imgObj => {
-            if (imgObj.file) fd.append("related_images", imgObj.file);
+            if (imgObj.file) {
+                fd.append("related_images", imgObj.file);
+            } else if (imgObj.url) {
+                existingRelatedImages.push(imgObj.url);
+            }
         });
+        if (existingRelatedImages.length > 0) {
+            fd.append("existing_related_images", JSON.stringify(existingRelatedImages));
+        }
 
         // 🔥 VARIANTS — convert thành JSON
         const variantsForBackend = productData.variants
             .filter(v => v.size && v.color && v.sku)
-            .map(v => ({
+            .map((v, i) => ({
                 size: v.size,
                 color: v.color,
                 sku: v.sku,
                 stock: parseInt(v.stock) || 0,
-                status: v.status
+                status: v.status,
+                // Nếu không upload ảnh mới thì gửi link cũ
+                image_url: v.image?.url || null
             }));
 
         fd.append("variants", JSON.stringify(variantsForBackend));
 
-        // 🔥 Append ảnh variant riêng
+        // 🔥 Append ảnh variant mới
         variantsForBackend.forEach((v, i) => {
             const img = productData.variants[i].image;
             if (img?.file) fd.append(`variant_images_${i}`, img.file);

@@ -1,12 +1,12 @@
 import React from 'react';
 import { ShoppingCart, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import useCart from '../../hooks/useCart'
+import { useCartContext } from '../../context/CartContext';
 import './ProductCard.css';
 
 const ProductCard = ({ product, onProductClick }) => {
   const navigate = useNavigate();
-  const { addToCart } = useCart();
+  const { addToCart } = useCartContext();
 
   const renderStars = (rating) => {
     const stars = [];

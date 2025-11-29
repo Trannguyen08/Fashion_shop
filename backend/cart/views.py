@@ -1,3 +1,4 @@
+from django.http import JsonResponse
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -10,34 +11,34 @@ from .serializers import CartSerializer, CartItemSerializer
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
-def get_cart_by_userid(request, user_id):
+def get_cart_by_userid(request, account_id):
     try:
-        account = Account.objects.get(user_id=user_id)
+        account = Account.objects.get(id=account_id)
         cart = Cart.objects.get(account=account)
         serializer = CartSerializer(cart)
 
-        return Response(
+        return JsonResponse(
             {
                 'success': True,
                 'data': serializer.data
             },
-            status=status.HTTP_200_OK
+            status=200
         )
 
     except Account.DoesNotExist:
-        return Response(
+        return JsonResponse(
             {'success': False, 'message': 'Account not found'},
-            status=status.HTTP_404_NOT_FOUND
+            status=404
         )
     except Cart.DoesNotExist:
-        return Response(
+        return JsonResponse(
             {'success': False, 'message': 'Cart not found'},
-            status=status.HTTP_404_NOT_FOUND
+            status=404
         )
     except Exception as e:
-        return Response(
+        return JsonResponse(
             {'success': False, 'message': str(e)},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status=500
         )
 
 #Thêm sản phẩm
@@ -57,7 +58,7 @@ def add_to_cart(request, user_id):
             )
 
         # Lấy account và cart
-        account = Account.objects.get(user_id=user_id)
+        account = Account.objects.get(id=user_id)
         cart, created = Cart.objects.get_or_create(account=account)
 
         # Lấy product và variant
@@ -128,7 +129,7 @@ def update_cart_item(request, user_id, item_id):
             )
 
         # Lấy cart item
-        account = Account.objects.get(user_id=user_id)
+        account = Account.objects.get(id=user_id)
         cart = Cart.objects.get(account=account)
         cart_item = CartItem.objects.get(id=item_id, cart=cart)
 
@@ -168,7 +169,7 @@ def update_cart_item(request, user_id, item_id):
 @permission_classes([AllowAny])
 def remove_from_cart(request, user_id, item_id):
     try:
-        account = Account.objects.get(user_id=user_id)
+        account = Account.objects.get(id=user_id)
         cart = Cart.objects.get(account=account)
         cart_item = CartItem.objects.get(id=item_id, cart=cart)
 

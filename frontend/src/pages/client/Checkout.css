@@ -493,3 +493,109 @@
     font-size: 18px;
   }
 }
+
+/* Address Selection */
+.address-selection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.address-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 15px;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background-color: white;
+}
+
+.address-option:hover {
+  border-color: #e70463;
+  background-color: #fff5f9;
+}
+
+.address-option.selected {
+  border-color: #e70463;
+  background-color: #fff5f9;
+}
+
+.address-option input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  cursor: pointer;
+  accent-color: #e70463;
+  flex-shrink: 0;
+}
+
+.address-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0px;
+}
+
+.address-header-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.address-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #333;
+}
+
+.default-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  background-color: #e70463;
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+.address-phone {
+  font-size: 13px;
+  font-weight: 600 !important;
+  color: #333 !important;
+  margin: 0 !important;
+  margin-bottom: 10px !important;
+}
+
+.address-detail {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333 !important;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.empty-address {
+  text-align: center;
+  padding: 30px 20px;
+  background-color: #f9f9f9;
+  border-radius: 6px;
+  border: 1px dashed #ddd;
+}
+
+.empty-address p {
+  font-size: 14px;
+  color: #666;
+  margin: 5px 0;
+}
+
+.loading-text {
+  text-align: center;
+  padding: 20px;
+  color: #999;
+  font-size: 14px;
+}

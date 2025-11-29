@@ -61,7 +61,8 @@ const Category = () => {
       axios
         .get(pageInfo.endpoint)
         .then((res) => {
-          setProducts(res.data);
+          setProducts(res.data.products);
+          console.log("Products fetched:", res.data);
           setLoading(false);
         })
         .catch((err) => {
@@ -69,6 +70,7 @@ const Category = () => {
           setLoading(false);
         });
     }
+    console.log("Category page info:", pageInfo);
   }, [pageInfo.endpoint, category]);
 
   return (
