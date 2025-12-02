@@ -1,27 +1,64 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Eye, Lock, Unlock, Search } from 'lucide-react'; 
 import { filterListByFields } from '../../utils/searchUtils';
+import axios from 'axios';
 import './Categories.css';
 
-const initialCustomers = [
-  { id: 101, name: 'Nguyễn Văn A', email: 'vana@example.com', phone: '0901234567', totalOrders: 5, status: 'Active' },
-  { id: 102, name: 'Trần Thị B', email: 'thib@example.com', phone: '0987654321', totalOrders: 12, status: 'Active' },
-  { id: 103, name: 'Lê Văn C', email: 'vanc@example.com', phone: '0912345678', totalOrders: 0, status: 'Inactive' },
-  { id: 104, name: 'Phạm Văn D', email: 'vand@example.com', phone: '0919283746', totalOrders: 7, status: 'Active' },
-  { id: 105, name: 'Võ Thị E', email: 'thie@example.com', phone: '0978675645', totalOrders: 1, status: 'Inactive' },
-];
-
 const Customers = () => {
-  const [customers, setCustomers] = useState(initialCustomers);
+  const [customers, setCustomers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  // Lấy danh sách khách hàng từ API
+  const fetchCustomers = async () => {
+    try {
+      const response = await axios.get('http://127.0.0.1:8000/api/account/all-customers/'); 
+      setCustomers(response.data.customers);
+      console.log("Fetched customers:", response.data.customers);
+      setLoading(false);
+    } catch (error) {
+      console.error('Lỗi khi lấy danh sách khách hàng:', error);
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCustomers();
+  }, []);
+
+  // Cập nhật trạng thái khách hàng
+  const toggleStatus = async (customerId, currentStatus) => {
+    const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
+
+    try {
+      await axios.post(`http://127.0.0.1:8000/api/account/update-status/${customerId}/`, {
+        status: newStatus,
+      });
+
+      // Cập nhật giao diện local ngay lập tức
+      setCustomers(prev =>
+        prev.map(c =>
+          c.account_id === customerId
+            ? { ...c, is_active: newStatus === 'Active' } // chuyển sang boolean
+            : c
+        )
+      );
+    } catch (error) {
+      console.error('Lỗi khi cập nhật trạng thái:', error);
+    }
+  };
 
   const getStatusBadgeClass = (status) => {
-    return status === 'Active' ? 'bg-success text-white' : 'bg-danger text-white';
+    return status ? 'bg-success text-white' : 'bg-danger text-white';
   };
 
   const filteredCustomers = useMemo(() => {
     return filterListByFields(customers, searchTerm, ['name', 'email']);
   }, [customers, searchTerm]);
+
+  if (loading) {
+    return <div className="text-center py-5">Đang tải danh sách khách hàng...</div>;
+  }
 
   return (
     <div className="container-fluid">
@@ -64,14 +101,14 @@ const Customers = () => {
                 {filteredCustomers.length > 0 ? (
                   filteredCustomers.map((customer) => (
                     <tr key={customer.id}>
-                      <td className="align-middle px-4 py-3">{customer.id}</td>
-                      <td className="align-middle px-4 py-3 fw-bold text-dark">{customer.name}</td>
+                      <td className="align-middle px-4 py-3">{customer.account_id}</td>
+                      <td className="align-middle px-4 py-3 fw-bold text-dark">{customer.full_name}</td>
                       <td className="align-middle px-4 py-3">{customer.email}</td>
                       <td className="align-middle px-4 py-3">{customer.phone}</td>
                       <td className="text-center align-middle px-4 py-3">{customer.totalOrders}</td>
                       <td className="text-center align-middle px-4 py-3">
-                        <span className={`badge ${getStatusBadgeClass(customer.status)} fw-normal`}>
-                          {customer.status}
+                        <span className={`badge ${getStatusBadgeClass(customer.is_active)} fw-normal`}>
+                          {customer.is_active ? 'Active' : 'Inactive'}
                         </span>
                       </td>
                       <td className="align-middle px-4 py-3 text-center">
@@ -83,10 +120,11 @@ const Customers = () => {
                         </button>
                         
                         <button 
-                            className={`btn btn-sm btn-link p-0 icon-action ${customer.status === 'Active' ? 'text-warning' : 'text-success'}`}
-                            title={customer.status === 'Active' ? 'Khóa khách hàng' : 'Mở khóa khách hàng'}
+                            className={`btn btn-sm btn-link p-0 icon-action ${customer.is_active ? 'text-warning' : 'text-success'}`}
+                            title={customer.is_active ? 'Khóa khách hàng' : 'Mở khóa khách hàng'}
+                            onClick={() => toggleStatus(customer.account_id, customer.is_active ? 'Active' : 'Inactive')}
                         >
-                            {customer.status === 'Active' ? <Lock size={18} /> : <Unlock size={18} />}
+                            {customer.is_active ? <Lock size={18} /> : <Unlock size={18} />}
                         </button>
                       </td>
                     </tr>

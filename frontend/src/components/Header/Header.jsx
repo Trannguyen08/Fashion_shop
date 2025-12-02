@@ -1,15 +1,25 @@
 import React, { useState, useRef, useEffect } from "react";
 import "./Header.css";
 import { FaSearch, FaShoppingCart, FaUser } from "react-icons/fa";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import defaultAvatar from "../../assets/images/user.png";
+import axios from "axios";
+import { 
+  createCategorySlug, 
+  getCachedCategories, 
+  setCachedCategories 
+} from "../../utils/categoryUtils";
 
 const Header = () => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [user, setUser] = useState(null);
   const [cartCount, setCartCount] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [categories, setCategories] = useState([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
   const timeoutRef = useRef(null);
   const location = useLocation();
+  const navigate = useNavigate();
 
   // ✅ Kiểm tra user trong localStorage
   useEffect(() => {
@@ -23,12 +33,41 @@ const Header = () => {
     }
   }, []);
 
+  // ✅ Lấy danh sách categories từ API hoặc cache
+  useEffect(() => {
+    const fetchCategories = async () => {
+      // Kiểm tra cache trước
+      const cachedCategories = getCachedCategories();
+      if (cachedCategories) {
+        setCategories(cachedCategories);
+        setLoadingCategories(false);
+        console.log("Categories loaded from cache");
+        return;
+      }
+
+      // Nếu không có cache, gọi API
+      try {
+        const response = await axios.get("http://127.0.0.1:8000/category/all-category/");
+        const categoriesData = response.data.categories || response.data;
+        
+        setCategories(categoriesData);
+        setCachedCategories(categoriesData); // Lưu vào cache
+        setLoadingCategories(false);
+        console.log("Categories loaded from API:", categoriesData);
+      } catch (error) {
+        console.error("Lỗi khi lấy categories:", error);
+        setLoadingCategories(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
   // ✅ Lấy SỐ LƯỢNG SẢN PHẨM KHÁC NHAU trong giỏ hàng từ localStorage
   useEffect(() => {
     const loadCartCount = () => {
       try {
         const cartData = JSON.parse(localStorage.getItem("cart"));
-        // Lấy số lượng items (sản phẩm khác nhau), không phải tổng quantity
         const count = cartData?.items?.length || 0;
         setCartCount(count);
       } catch {
@@ -37,8 +76,6 @@ const Header = () => {
     };
 
     loadCartCount();
-
-    // Theo dõi sự thay đổi giỏ hàng trong localStorage
     window.addEventListener("storage", loadCartCount);
 
     return () => {
@@ -53,6 +90,28 @@ const Header = () => {
 
   const handleMouseLeave = () => {
     timeoutRef.current = setTimeout(() => setShowDropdown(false), 200);
+  };
+
+  // ✅ Xử lý tìm kiếm
+  const handleSearch = (e) => {
+    e.preventDefault();
+    let cleanedQuery = searchQuery.trim().toLowerCase();
+    cleanedQuery = cleanedQuery.replace(/\s+/g, ' '); 
+
+    if (cleanedQuery) {
+      navigate(`/search?q=${encodeURIComponent(cleanedQuery)}`);
+      setSearchQuery(""); 
+    }
+  };
+
+  const handleSearchInputChange = (e) => {
+    setSearchQuery(e.target.value);
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === "Enter") {
+      handleSearch(e);
+    }
   };
 
   return (
@@ -78,14 +137,24 @@ const Header = () => {
           </Link>
           {showDropdown && (
             <ul className="dropdown-menu show">
-              <li><Link to="/category/shirt">Shirt</Link></li>
-              <li><Link to="/category/t-shirt">T-shirt</Link></li>
-              <li><Link to="/category/polo">Polo</Link></li>
-              <li><Link to="/category/pants">Pants</Link></li>
-              <li><Link to="/category/short">Short</Link></li>
-              <li><Link to="/category/jacket">Jacket</Link></li>
-              <li><Link to="/category/hoodies">Hoodies</Link></li>
-              <li><Link to="/category/cardigan">Cardigan</Link></li>
+              {loadingCategories ? (
+                <li className="loading-item">Đang tải...</li>
+              ) : categories.length > 0 ? (
+                categories.map((category) => {
+                  const categoryName = category.name || category.category_name;
+                  const categorySlug = category.slug || createCategorySlug(categoryName);
+                  
+                  return (
+                    <li key={category.id || category.category_id}>
+                      <Link to={`/category/${categorySlug}`} >
+                        {categoryName}
+                      </Link>
+                    </li>
+                  );
+                })
+              ) : (
+                <li className="loading-item">Không có danh mục</li>
+              )}
             </ul>
           )}
         </li>
@@ -138,8 +207,14 @@ const Header = () => {
       {/* ----- RIGHT SECTION ----- */}
       <div className="right-section">
         <div className="search-box">
-          <input type="text" placeholder="Search..." />
-          <FaSearch className="search-icon" />
+          <input
+            type="text"
+            placeholder="Search..."
+            value={searchQuery}
+            onChange={handleSearchInputChange}
+            onKeyPress={handleKeyPress}
+          />
+          <FaSearch className="search-icon" onClick={handleSearch} />
         </div>
 
         <Link to="/cart" className="cart-icon-container">

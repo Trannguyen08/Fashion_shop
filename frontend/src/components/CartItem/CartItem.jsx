@@ -1,54 +1,51 @@
 import React, { useState, useRef } from 'react';
 import { Trash2 } from 'lucide-react';
-import useCart from '../../hooks/useCart';
+import { useCartContext } from '../../context/CartContext';
 import './CartItem.css';
 
-const CartItem = ({ item, isSelected, onCheckbox, onQuantityChange, onDelete }) => {
-  const { updateCartItem, removeFromCart } = useCart();
+const CartItem = ({ item, isSelected, onCheckbox, onDelete }) => {
+  const { updateCartItem, removeFromCart } = useCartContext();
   
-  // ⏱️ Debounce: chỉ gọi API sau khi user dừng tương tác
   const debounceTimer = useRef(null);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [localQuantity, setLocalQuantity] = useState(item.quantity);
 
-  // 🔄 Xử lý cập nhật số lượng (có debounce)
-  const handleQuantityChange = async (productId, productVariantId, newQuantity) => {
-    // Kiểm tra hợp lệ
+  // 🔥 Cập nhật số lượng với debounce
+  const handleQuantityChange = async (newQuantity) => {
     if (newQuantity < 1) return;
 
-    // 1️⃣ Cập nhật UI ngay lập tức (callback to parent)
-    onQuantityChange?.(productId, newQuantity);
+    // 1️⃣ Cập nhật UI ngay
+    setLocalQuantity(newQuantity);
 
-    // 2️⃣ Clear timer cũ (nếu có)
+    // 2️⃣ Clear timer cũ
     if (debounceTimer.current) {
       clearTimeout(debounceTimer.current);
     }
 
-    // 3️⃣ Set timer mới - chờ 500ms rồi gọi API
+    // 3️⃣ Debounce API call
     setIsUpdating(true);
     debounceTimer.current = setTimeout(async () => {
-      const success = await updateCartItem(productId, productVariantId, newQuantity);
+      const success = await updateCartItem(item.id, item.product_variant_id, newQuantity);
       setIsUpdating(false);
       
       if (!success) {
         console.error('❌ Cập nhật thất bại');
+        setLocalQuantity(item.quantity); // Rollback
       }
     }, 500);
   };
 
-  // ❌ Xử lý xóa sản phẩm
-  const handleDelete = async (productId, productVariantId) => {
+  // ❌ Xóa sản phẩm
+  const handleDelete = async () => {
     if (!window.confirm('Bạn có chắc muốn xóa sản phẩm này?')) {
       return;
     }
 
-    const success = await removeFromCart(productId, productVariantId);
+    const success = await removeFromCart(item.id);
     if (success) {
-      onDelete?.(productId);
-      console.log("✅ Xóa sản phẩm thành công");
+      onDelete?.(item.id);
     }
   };
-
-  const itemTotal = (item.current_price || item.price) * item.quantity;
 
   return (
     <div className="cart-item">
@@ -57,17 +54,27 @@ const CartItem = ({ item, isSelected, onCheckbox, onQuantityChange, onDelete }) 
         <input
           type="checkbox"
           checked={isSelected || false}
-          onChange={() => onCheckbox?.(item.id)}
+          onChange={onCheckbox}
           className="checkbox"
         />
       </div>
 
       {/* Product info */}
       <div className="item-product">
-        <img src={item.product_img} alt={item.name} className="item-image" />
+        <img 
+          src={item.product_img || '/placeholder.png'} 
+          alt={item.product_name} 
+          className="item-image"
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.src = '/placeholder.png';
+          }}
+        />
         <div className="item-info">
-          <h3 className="item-name" title={item.name}>
-            {item.name?.length > 40 ? item.name.substring(0, 40) + '...' : item.name}
+          <h3 className="item-name" title={item.product_name}>
+            {item.product_name?.length > 40 
+              ? item.product_name.substring(0, 40) + '...' 
+              : item.product_name}
           </h3>
           <p className="item-details">
             <span className="detail-label">Size:</span> {item.size || 'N/A'} | 
@@ -79,7 +86,7 @@ const CartItem = ({ item, isSelected, onCheckbox, onQuantityChange, onDelete }) 
       {/* Unit price */}
       <div className="item-price">
         <span className="price-amount">
-          {(item.current_price || item.price)?.toLocaleString('vi-VN')}đ
+          {parseFloat(item.current_price || 0).toLocaleString('vi-VN')}₫
         </span>
       </div>
 
@@ -87,18 +94,18 @@ const CartItem = ({ item, isSelected, onCheckbox, onQuantityChange, onDelete }) 
       <div className="item-quantity">
         <button 
           className="qty-btn"
-          onClick={() => handleQuantityChange(item.id, item.product_variant_id, item.quantity - 1)}
-          disabled={item.quantity <= 1 || isUpdating}
+          onClick={() => handleQuantityChange(localQuantity - 1)}
+          disabled={localQuantity <= 1 || isUpdating}
         >
           −
         </button>
         <input
           type="number"
-          value={item.quantity}
+          value={localQuantity}
           onChange={(e) => {
             const newQty = parseInt(e.target.value) || 1;
             if (newQty >= 1) {
-              handleQuantityChange(item.id, item.product_variant_id, newQty);
+              handleQuantityChange(newQty);
             }
           }}
           className="qty-input"
@@ -107,7 +114,7 @@ const CartItem = ({ item, isSelected, onCheckbox, onQuantityChange, onDelete }) 
         />
         <button 
           className="qty-btn"
-          onClick={() => handleQuantityChange(item.id, item.product_variant_id, item.quantity + 1)}
+          onClick={() => handleQuantityChange(localQuantity + 1)}
           disabled={isUpdating}
         >
           +
@@ -117,7 +124,7 @@ const CartItem = ({ item, isSelected, onCheckbox, onQuantityChange, onDelete }) 
       {/* Total price */}
       <div className="item-total">
         <span className="total-amount">
-          {itemTotal.toLocaleString('vi-VN')}đ
+          {parseFloat(item.total_price || 0).toLocaleString('vi-VN')}₫
         </span>
       </div>
 
@@ -125,7 +132,7 @@ const CartItem = ({ item, isSelected, onCheckbox, onQuantityChange, onDelete }) 
       <div className="item-action">
         <button 
           className="delete-btn"
-          onClick={() => handleDelete(item.id, item.product_variant_id)}
+          onClick={handleDelete}
           title="Xóa sản phẩm"
           disabled={isUpdating}
         >

@@ -14,7 +14,7 @@ def get_all_product(request):
     if alls is None:
         products = Product.objects.select_related("category").prefetch_related(
             'product_imgs','product_variants'
-        ).all()
+        ).filter(status="Active")
         alls = ProductSerializer(products, many=True).data
         cache.set(ALL_PRODUCTS_KEY, alls, timeout=86400)
 
@@ -24,7 +24,7 @@ def get_all_product(request):
                 status=200
             )
     return JsonResponse(
-         {"products": all},
+         {"products": alls},
          status=200,
          safe=False
     )
@@ -102,6 +102,27 @@ def get_bs_products(request):
         ).filter(is_new=True)[:32]
         bs_product = ProductSerializer(product_qs, many=True).data
         cache.set(BS_PRODUCT_KEY, bs_product, timeout=86400)
+
+    return JsonResponse({
+        'products': bs_product,
+    }, status=200)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_search_products(request):
+    search = request.GET.get('q', '')
+    if not search:
+        return JsonResponse({'products': []})
+    KEY = f"search_products_{search}"
+    bs_product = cache.get(KEY)
+
+    if bs_product is None:
+        product_qs = Product.objects.select_related("category").prefetch_related(
+            'product_imgs', 'product_variants'
+        ).filter(name__icontains=search)
+        bs_product = ProductSerializer(product_qs, many=True).data
+        cache.set(KEY, bs_product, timeout=86400)
 
     return JsonResponse({
         'products': bs_product,

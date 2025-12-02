@@ -47,6 +47,7 @@ export default function RouteConfig() {
         <Route path="/shop" element={<Category />} />
         <Route path="/new-arrival" element={<Category />} />
         <Route path="/product/:productId" element={<ProductDetailPage />} />
+        <Route path="/search" element={<Category />} />
       </Route>
 
       <Route path="/register" element={<Register />} />
