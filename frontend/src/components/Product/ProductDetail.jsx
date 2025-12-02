@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCartContext } from '../../context/CartContext';
 import { Star } from "lucide-react";
+import { formatPrice } from '../../utils/formatUtils';
 import './ProductDetail.css';
 
 const ProductDetail = ({ product }) => {
@@ -151,7 +152,7 @@ const ProductDetail = ({ product }) => {
                 className={mainImage === product.product_img ? 'active' : ''}
                 onClick={() => setMainImage(product.product_img)}
               />
-              {product.product_images?.map(img => (
+              {product.product_imgs?.map(img => (
                 <img
                   key={img.id}
                   src={img.PI_img}
@@ -189,11 +190,11 @@ const ProductDetail = ({ product }) => {
 
             <div className="product-price">
               <span className="current-price">
-                {product.current_price?.toLocaleString('vi-VN')}₫
+                {formatPrice(product.current_price)}
               </span>
               {product.old_price && (
                 <span className="old-price">
-                  {product.old_price?.toLocaleString('vi-VN')}₫
+                  {formatPrice(product.old_price)}
                 </span>
               )}
             </div>

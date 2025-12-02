@@ -2,6 +2,7 @@ import ProductGrid from "../../components/Product/ProductGrid";
 import { useParams, useLocation } from "react-router-dom";
 import axios from "axios";
 import React, { useState, useEffect } from "react";
+import { formatCategoryName } from "../../utils/categoryUtils";
 import "./Category.css";
 
 const Category = () => {
@@ -10,16 +11,27 @@ const Category = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  // Lấy search query từ URL
+  const searchParams = new URLSearchParams(location.search);
+  const searchQuery = searchParams.get("q");
+
   // Xác định title và endpoint dựa trên path
   const getPageInfo = () => {
     const path = location.pathname;
 
-    if (path.startsWith("/category/")) {
+    if (path === "/search") {
       return {
-        title: category ? category.toUpperCase() : "SHOP",
-        subtitle: "Khám phá bộ sưu tập của chúng tôi",
+        title: `KẾT QUẢ TÌM KIẾM: "${searchQuery}"`,
+        subtitle: `Tìm thấy sản phẩm với từ khóa "${searchQuery}"`,
+        type: "search",
+        endpoint: `http://127.0.0.1:8000/product/search/?q=${encodeURIComponent(searchQuery)}`
+      };
+    } else if (path.startsWith("/category/")) {
+      return {
+        title: formatCategoryName(category),
+        subtitle: `Khám phá bộ sưu tập ${formatCategoryName(category)}`,
         type: "category",
-        endpoint: `http://127.0.0.1:8000/product/category/${category}`
+        endpoint: `http://127.0.0.1:8000/category/${category}/`
       };
     } else if (path === "/best-seller") {
       return {
@@ -71,7 +83,7 @@ const Category = () => {
         });
     }
     console.log("Category page info:", pageInfo);
-  }, [pageInfo.endpoint, category]);
+  }, [pageInfo.endpoint, category, searchQuery]);
 
   return (
     <div className="shop-category-page">
@@ -94,7 +106,12 @@ const Category = () => {
           <ProductGrid products={products} />
         ) : (
           <div className="shop-category-empty">
-            <p>Không tìm thấy sản phẩm</p>
+            <p>
+              {pageInfo.type === "search" 
+                ? `Không tìm thấy sản phẩm nào với từ khóa "${searchQuery}"`
+                : "Không tìm thấy sản phẩm"
+              }
+            </p>
           </div>
         )}
       </div>

@@ -1,7 +1,8 @@
 import React from 'react';
-import { ShoppingCart, Star } from 'lucide-react';
+import { Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useCartContext } from '../../context/CartContext';
+import { formatPrice } from '../../utils/formatUtils';
 import './ProductCard.css';
 
 const ProductCard = ({ product, onProductClick }) => {
@@ -46,14 +47,14 @@ const ProductCard = ({ product, onProductClick }) => {
         </h3>
         
         <div className="product-price2">
-          {product.old_price ? (
-            <>
-              <span className="price-new">{product.current_price?.toLocaleString('vi-VN')}₫</span>
-              <span className="price-old">{product.old_price?.toLocaleString('vi-VN')}₫</span>
-            </>
-          ) : (
-            <span className="price-only">{product.current_price?.toLocaleString('vi-VN')}₫</span>
-          )}
+            {product.old_price ? (
+                <>
+                    <span className="price-new">{formatPrice(product.current_price)}</span>
+                    <span className="price-old">{formatPrice(product.old_price)}</span>
+                </>
+            ) : (
+                <span className="price-only">{formatPrice(product.current_price)}</span>
+            )}
         </div>
         
         <div className="product-footer">

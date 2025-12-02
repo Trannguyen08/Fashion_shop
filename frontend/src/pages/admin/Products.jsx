@@ -32,17 +32,17 @@ const Products = () => {
     const mapProduct = (p) => ({
         id: p.id,
         name: p.name,
-        basePrice: parseFloat(p.old_price),
-        salePrice: p.current_price ? parseFloat(p.current_price) : null,
+        old_price: parseFloat(p.old_price),  // 🔥 Đổi từ basePrice
+        current_price: p.current_price ? parseFloat(p.current_price) : null,  // 🔥 Đổi từ salePrice
         description: p.description,
         sold: p.sold || 0,
-        mainImage: p.product_img,
-        variants: p.product_variants.map(v => ({
+        product_img: p.product_img,  // 🔥 Đổi từ mainImage
+        product_variants: p.product_variants.map(v => ({  // 🔥 Đổi từ variants
             id: v.id,
             sku: v.sku,
             size: v.size,
             color: v.color,
-            stock: v.stock_quantity,
+            stock_quantity: v.stock_quantity,  // 🔥 Giữ nguyên tên backend
             PV_img: v.PV_img,
             status: v.status
         })),
@@ -50,11 +50,12 @@ const Products = () => {
             id: img.id,
             PI_img: img.PI_img
         })),
-        category: p.category_name,
+        category_name: p.category_name,  // 🔥 Thêm category_name
+        category_id: p.category_id,  // 🔥 Thêm category_id nếu backend trả về
         status: p.status === 'out-of-stock' ? 'Hết hàng' : p.status,
-        isNew: p.is_new,
-        isFeatured: p.is_featured,
-        createdAt: p.created_at
+        is_new: p.is_new,  // 🔥 Đổi từ isNew
+        is_featured: p.is_featured,  // 🔥 Đổi từ isFeatured
+        created_at: p.created_at  // 🔥 Đổi từ createdAt
     });
 
     const getStatusBadgeClass = (status) => {
@@ -183,7 +184,7 @@ const Products = () => {
                                             <td className="px-4 py-3">
                                                 <div className="d-flex align-items-center">
                                                     <img 
-                                                        src={product.mainImage} 
+                                                        src={product.product_img} 
                                                         alt={product.name}
                                                         className="rounded border me-3"
                                                         style={{ width: '48px', height: '48px', objectFit: 'cover' }}
@@ -191,24 +192,24 @@ const Products = () => {
                                                     <div>
                                                         <div className="fw-bold text-dark">{product.name}</div>
                                                         <small className="text-muted" style={{fontSize: '0.8rem'}}>
-                                                            {product.variants.length} biến thể
+                                                            {product.product_variants.length} biến thể
                                                         </small>
                                                     </div>
                                                 </div>
                                             </td>
 
                                             <td className="px-4 py-3">
-                                                <span className="badge bg-light text-dark border">{product.category}</span>
+                                                <span className="badge bg-light text-dark border">{product.category_name}</span>
                                             </td>
 
                                             <td className="text-center px-4 py-3">
-                                                {product.basePrice.toLocaleString('vi-VN')}
+                                                {product.old_price.toLocaleString('vi-VN')}
                                             </td>
 
                                             <td className="text-center px-4 py-3">
-                                                {product.salePrice ? (
+                                                {product.current_price ? (
                                                     <span className="text-danger fw-bold">
-                                                        {product.salePrice.toLocaleString('vi-VN')}
+                                                        {product.current_price.toLocaleString('vi-VN')}
                                                     </span>
                                                 ) : <span className="text-muted">-</span>}
                                             </td>
@@ -218,7 +219,7 @@ const Products = () => {
                                             </td>
 
                                             <td className="text-center px-4 py-3">
-                                                {product.variants.reduce((sum, v) => sum + v.stock, 0)}
+                                                {product.product_variants.reduce((sum, v) => sum + v.stock_quantity, 0)}
                                             </td>
 
                                             <td className="text-center px-4 py-3">

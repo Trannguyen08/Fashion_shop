@@ -1,8 +1,12 @@
 import RouteConfig from './routes/RouteConfig'; 
+import ScrollToTop from './components/ScrollToTop';
 
 function App() {
   return (
-    <RouteConfig />
+    <>
+      <ScrollToTop />
+      <RouteConfig />
+    </>
   );
 }
 

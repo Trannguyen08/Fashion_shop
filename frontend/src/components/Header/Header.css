@@ -121,15 +121,13 @@
   color: #fff !important;
   cursor: pointer;
   transition: all 0.3s ease;
+  border-bottom: 1px solid #767676 !important;
 }
 
 .dropdown-menu li:hover {
-  background-color: #e70463;
-  color: fff !important;
+  color: #e70463 !important;
   padding-left: 18px;
 }
-
-
 
 .right-section {
   display: flex;

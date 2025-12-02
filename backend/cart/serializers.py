@@ -1,4 +1,6 @@
 from rest_framework import serializers
+
+from utils.cloudinary_helper import get_cloudinary_url
 from .models import Cart, CartItem
 
 
@@ -17,7 +19,7 @@ class CartItemSerializer(serializers.ModelSerializer):
         decimal_places=2,
         read_only=True
     )
-    product_img = serializers.CharField(source='product.image', read_only=True)
+    product_img = serializers.SerializerMethodField()
     product_variant_id = serializers.IntegerField(source='product_variant.id', read_only=True)
     size = serializers.CharField(source='product_variant.size', read_only=True)
     color = serializers.CharField(source='product_variant.color', read_only=True)
@@ -44,6 +46,11 @@ class CartItemSerializer(serializers.ModelSerializer):
     def get_total_price(self, obj):
         old_price = obj.product.current_price or obj.product.old_price
         return float(old_price) * obj.quantity
+
+    def get_product_img(self, obj):
+        if obj.product.product_img:
+            return get_cloudinary_url(str(obj.product.product_img.url))
+        return None
 
 
 class CartSerializer(serializers.ModelSerializer):

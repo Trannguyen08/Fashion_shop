@@ -3,8 +3,6 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny
 from django.core.cache import cache
-from yaml import serialize
-
 from ..models import Product, Category, ProductVariant, ProductImage
 from ..serializers import ProductSerializer
 import json

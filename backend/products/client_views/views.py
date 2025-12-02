@@ -108,3 +108,24 @@ def get_bs_products(request):
     }, status=200)
 
 
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_search_products(request):
+    search = request.GET.get('q', '')
+    if not search:
+        return JsonResponse({'products': []})
+    KEY = f"search_products_{search}"
+    bs_product = cache.get(KEY)
+
+    if bs_product is None:
+        product_qs = Product.objects.select_related("category").prefetch_related(
+            'product_imgs', 'product_variants'
+        ).filter(name__icontains=search)
+        bs_product = ProductSerializer(product_qs, many=True).data
+        cache.set(KEY, bs_product, timeout=86400)
+
+    return JsonResponse({
+        'products': bs_product,
+    }, status=200)
+
+

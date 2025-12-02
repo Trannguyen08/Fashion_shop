@@ -75,9 +75,9 @@ const ProductGrid = ({ products = [] }) => {
 
       return filters.price.some(label => {
         const range = priceRanges.find(r => r.label === label);
-        if (!range) return false;
-
-        const price = product.current_price || 0;
+        if (!range) 
+          return false;
+        const price = parseFloat(product.current_price) || 0; 
         return price >= range.min && price <= range.max;
       });
     },
@@ -88,17 +88,26 @@ const ProductGrid = ({ products = [] }) => {
   const filteredProducts = useMemo(() => {
     return products
       .filter(p => {
-        if (filters.color.length > 0 && !filters.color.includes(p.color)) return false;
-        if (filters.size.length > 0 && !filters.size.includes(p.size)) return false;
+        if (filters.color.length > 0) {
+            const hasMatchingColor = p.product_variants.some(variant => filters.color.includes(variant.color));
+            if (!hasMatchingColor) return false;
+        }
+
+        // Lọc kích thước:
+        if (filters.size.length > 0) {
+            const hasMatchingSize = p.product_variants.some(variant => filters.size.includes(variant.size));
+            if (!hasMatchingSize) return false;
+        }
+        
         if (!filterByPrice(p)) return false;
         return true;
-      })
+     })
       .sort((a, b) => {
         switch (filters.sort) {
           case 'price_asc':
-            return (a.current_price || 0) - (b.current_price || 0);
+            return (parseFloat(a.current_price) || 0) - (parseFloat(b.current_price) || 0);
           case 'price_desc':
-            return (b.current_price || 0) - (a.current_price || 0);
+            return (parseFloat(b.current_price) || 0) - (parseFloat(a.current_price) || 0);
           case 'newest':
           default:
             return 0;
