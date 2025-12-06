@@ -20,6 +20,7 @@ class CartItemSerializer(serializers.ModelSerializer):
         read_only=True
     )
     product_img = serializers.SerializerMethodField()
+    stock = serializers.IntegerField(source='product_variant.stock_quantity', read_only=True)
     product_variant_id = serializers.IntegerField(source='product_variant.id', read_only=True)
     size = serializers.CharField(source='product_variant.size', read_only=True)
     color = serializers.CharField(source='product_variant.color', read_only=True)
@@ -40,6 +41,7 @@ class CartItemSerializer(serializers.ModelSerializer):
             'size',
             'color',
             'quantity',
+            'stock',
             'total_price'
         ]
 

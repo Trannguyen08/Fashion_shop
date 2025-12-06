@@ -7,6 +7,7 @@ class CustomerAddress(models.Model):
     phone = models.CharField(max_length=20)  # SĐT người nhận
     province = models.CharField(max_length=255)  # Tỉnh
     ward = models.CharField(max_length=255)  # Xã/phường
+    district = models.CharField(max_length=255, default="")
     address_detail = models.CharField(max_length=500)  # Số nhà, đường
 
     is_default = models.BooleanField(default=False)  # Đánh dấu địa chỉ mặc định

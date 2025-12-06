@@ -24,15 +24,22 @@ export default function useCart() {
   const loadCart = useCallback(async () => {
     try {
       setLoading(true);
+      setError(null);
+      
+      // ✅ Đọc user TRỰC TIẾP từ localStorage mỗi lần gọi
       const user = safeJSON(USER_STORAGE_KEY);
 
       if (user?.id) {
+        console.log("Loading cart from API for user:", user.id);
         const res = await axios.get(`${API_BASE_URL}/cart/${user.id}/`);
         const items = res.data.data?.items || [];
         setCart(items);
+        console.log("Cart loaded from API:", items);
       } else {
+        console.log("Loading cart from localStorage (guest user)");
         const localCart = safeJSON(CART_STORAGE_KEY, []);
         setCart(localCart);
+        console.log("Cart loaded from localStorage:", localCart);
       }
     } catch (err) {
       console.error("Load cart error:", err);
@@ -41,22 +48,51 @@ export default function useCart() {
     } finally {
       setLoading(false);
     }
-  }, []); // Dependency rỗng
+  }, []); // ✅ Dependency rỗng - hàm này sẽ luôn đọc user mới nhất
 
+  // ✅ Load cart khi mount
   useEffect(() => {
     loadCart();
+  }, [loadCart]);
+
+  // ✅ Listen cho localStorage changes (khi user login/logout)
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === USER_STORAGE_KEY || e.key === CART_STORAGE_KEY) {
+        console.log("Storage changed, reloading cart...");
+        loadCart();
+      }
+    };
+
+    // Listen for storage events from other tabs
+    window.addEventListener('storage', handleStorageChange);
+
+    // ✅ Custom event cho same-tab changes
+    const handleCustomStorageChange = () => {
+      console.log("Custom storage event, reloading cart...");
+      loadCart();
+    };
+    
+    window.addEventListener('cartStorageChange', handleCustomStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('cartStorageChange', handleCustomStorageChange);
+    };
   }, [loadCart]);
 
   // 🔥 Sync từ DB
   const syncCartFromDB = useCallback(async (userId) => {
     try {
+      console.log("Syncing cart from DB for user:", userId);
       const res = await axios.get(`${API_BASE_URL}/cart/${userId}/`);
       const items = res.data.data?.items || [];
       setCart(items);
+      console.log("Cart synced:", items);
     } catch (err) {
       console.error("Sync cart error:", err);
     }
-  }, []); // Dependency rỗng
+  }, []);
 
   // 🔥 THÊM SẢN PHẨM
   const addToCart = useCallback(async (product, variantId, quantity = 1, variantInfo = {}) => {
@@ -103,6 +139,9 @@ export default function useCart() {
 
       localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(newCart));
       setCart(newCart);
+      
+      // ✅ Dispatch custom event
+      window.dispatchEvent(new Event('cartStorageChange'));
       return true;
 
     } catch (err) {
@@ -110,7 +149,7 @@ export default function useCart() {
       setError(err.message);
       return false;
     }
-  }, [syncCartFromDB]); // Thêm syncCartFromDB
+  }, [syncCartFromDB]);
 
   // 🔥 CẬP NHẬT SỐ LƯỢNG
   const updateCartItem = useCallback(async (cartItemId, productVariantId, quantity) => {
@@ -140,6 +179,9 @@ export default function useCart() {
 
       localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(newCart));
       setCart(newCart);
+      
+      // ✅ Dispatch custom event
+      window.dispatchEvent(new Event('cartStorageChange'));
       return true;
 
     } catch (err) {
@@ -147,10 +189,9 @@ export default function useCart() {
       setError(err.message);
       return false;
     }
-  }, [cart, syncCartFromDB]); // Thêm cart, syncCartFromDB
+  }, [cart, syncCartFromDB]);
 
   // 🔥 XÓA 1 ITEM
-  // removeFromCart dùng cart, nên cần nó trong dependency
   const removeFromCart = useCallback(async (cartItemId) => {
     const user = safeJSON(USER_STORAGE_KEY);
 
@@ -162,6 +203,9 @@ export default function useCart() {
         const newCart = cart.filter((i) => i.id !== cartItemId);
         localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(newCart));
         setCart(newCart);
+        
+        // ✅ Dispatch custom event
+        window.dispatchEvent(new Event('cartStorageChange'));
       }
       return true;
 
@@ -183,6 +227,9 @@ export default function useCart() {
       } else {
         localStorage.removeItem(CART_STORAGE_KEY);
         setCart([]);
+        
+        // ✅ Dispatch custom event
+        window.dispatchEvent(new Event('cartStorageChange'));
       }
     } catch (err) {
       console.error("Clear cart error:", err);
@@ -206,6 +253,5 @@ export default function useCart() {
     loadCart,
     getTotalItems,
     getTotalPrice,
-    // KHÔNG EXPORT selectedIds, toggleSelectItem, getSelectedItems...
   };
 }

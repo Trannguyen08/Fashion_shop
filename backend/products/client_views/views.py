@@ -1,3 +1,4 @@
+from django.db.models import Q
 from django.http import JsonResponse
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
@@ -120,7 +121,10 @@ def get_search_products(request):
     if bs_product is None:
         product_qs = Product.objects.select_related("category").prefetch_related(
             'product_imgs', 'product_variants'
-        ).filter(name__icontains=search)
+        ).filter(
+            Q(name__icontains=search) |
+            Q(product_variants__sku__icontains=search)
+        ).distinct()
         bs_product = ProductSerializer(product_qs, many=True).data
         cache.set(KEY, bs_product, timeout=86400)
 

@@ -46,7 +46,7 @@
 
 .item-name {
   margin: 0 0 8px 0;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
   color: #333;
   line-height: 1.4;
@@ -68,7 +68,7 @@
 }
 
 .item-price {
-  text-align: right;
+  text-align: center;
 }
 
 .price-amount {
@@ -80,9 +80,8 @@
 .item-quantity {
   width: 120px;
   display: flex;
-  margin-left: 20px;
+  margin-left: 15px !important;
   border: 1px solid #ddd;
-  border-radius: 4px;
   background-color: #fff;
 }
 
@@ -104,12 +103,14 @@
 }
 
 .qty-input {
-  width: 60px;
+  width: 65px;
   height: 30px;
-  border: none;
   text-align: center;
   font-size: 14px;
   font-weight: 600;
+  border-radius: none !important;
+  border-top: 1px solid #ddd;
+  border-bottom: 1px solid #ddd;
 }
 
 .qty-input:focus {

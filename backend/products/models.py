@@ -8,7 +8,7 @@ from categories.models import Category
 #model product
 class Product(models.Model):
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='products')
-    name = models.TextField()  # ✅ thêm ()
+    name = models.TextField()
     old_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     current_price = models.DecimalField(max_digits=10, decimal_places=2)
     description = models.TextField()
@@ -43,27 +43,6 @@ class Product(models.Model):
     def __str__(self):
         return str(self.name)
 
-#model review
-class Review(models.Model):
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews')
-    account = models.ForeignKey(Account, on_delete=models.CASCADE, related_name='reviews')
-    rating = models.IntegerField(default=0)
-    comment = models.TextField(blank=True)
-    review_date = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        indexes = [
-            models.Index(fields=["product"]),  # auto but ok
-            models.Index(fields=["account"]),
-            models.Index(fields=["product", "-review_date"]),  # BEST
-        ]
-
-    def __str__(self):
-        return f"{self.account.username} - {self.product.name} ({self.rating}★)"
-
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        self.product.update_average_rating()
 
 #model productVariant
 class ProductVariant(models.Model):
@@ -91,6 +70,7 @@ class ProductVariant(models.Model):
     def __str__(self):
         return f"{self.product.name} ({self.color}, {self.size})"
 
+
 #model productImages
 class ProductImage(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='product_imgs')
@@ -98,3 +78,26 @@ class ProductImage(models.Model):
 
     def __str__(self):
         return f"{self.product.name} Image"
+
+
+#model review
+class Review(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews')
+    account = models.ForeignKey(Account, on_delete=models.CASCADE, related_name='reviews')
+    rating = models.IntegerField(default=0)
+    comment = models.TextField(blank=True)
+    review_date = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["product"]),  # auto but ok
+            models.Index(fields=["account"]),
+            models.Index(fields=["product", "-review_date"]),  # BEST
+        ]
+
+    def __str__(self):
+        return f"{self.account.username} - {self.product.name} ({self.rating}★)"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.product.update_average_rating()

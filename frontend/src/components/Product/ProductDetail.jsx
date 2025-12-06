@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCartContext } from '../../context/CartContext';
-import { Star } from "lucide-react";
+import { Star, TrendingUp } from "lucide-react";
 import { formatPrice } from '../../utils/formatUtils';
 import './ProductDetail.css';
 
@@ -20,28 +20,67 @@ const ProductDetail = ({ product }) => {
       setMainImage(product.product_img);
 
       if (product.product_variants?.length > 0) {
+        // Khởi tạo màu và kích thước với variant đầu tiên
         setSelectedColor(product.product_variants[0].color);
         setSelectedSize(product.product_variants[0].size);
       }
     }
   }, [product]);
 
+  // Lọc ra danh sách màu sắc duy nhất
   const colors = useMemo(() => {
     if (!product?.product_variants) return [];
     return [...new Set(product.product_variants.map(v => v.color))];
   }, [product]);
 
+  // Lọc ra danh sách kích thước duy nhất
   const sizes = useMemo(() => {
     if (!product?.product_variants) return [];
     return [...new Set(product.product_variants.map(v => v.size))];
   }, [product]);
 
+  // Tìm biến thể hiện tại dựa trên màu và size đã chọn
   const currentVariant = useMemo(() => {
     if (!product?.product_variants) return null;
     return product.product_variants.find(
       v => v.color === selectedColor && v.size === selectedSize
     );
   }, [product, selectedColor, selectedSize]);
+
+  // 🔥 Lấy danh sách ảnh hiển thị (ảnh sản phẩm chính + ảnh của variant hiện tại)
+  const displayImages = useMemo(() => {
+    const images = [
+      { id: 'main', src: product?.product_img, alt: 'main' }
+    ];
+
+    // Thêm ảnh phụ của sản phẩm
+    if (product?.product_imgs?.length > 0) {
+      product.product_imgs.forEach(img => {
+        images.push({ id: `img_${img.id}`, src: img.PI_img, alt: 'product' });
+      });
+    }
+
+    // Thêm ảnh của variant hiện tại (nếu có)
+    if (currentVariant?.variant_img) {
+      images.push({
+        id: `variant_${currentVariant.id}`,
+        src: currentVariant.variant_img,
+        alt: `${currentVariant.color} - ${currentVariant.size}`,
+        isVariant: true
+      });
+    }
+
+    return images;
+  }, [product, currentVariant]);
+
+  // 🔥 Tự động chuyển sang ảnh variant khi chọn màu/size
+  useEffect(() => {
+    if (currentVariant?.variant_img) {
+      setMainImage(currentVariant.variant_img);
+    } else {
+      setMainImage(product?.product_img);
+    }
+  }, [currentVariant, product]);
 
   const handleColorChange = (color) => {
     setSelectedColor(color);
@@ -67,23 +106,27 @@ const ProductDetail = ({ product }) => {
       return;
     }
 
-    // Lưu thông tin sản phẩm vào sessionStorage
     const itemForCheckout = {
-      id: product.id,
-      name: product.name,
-      price: product.current_price,
-      quantity: quantity,
-      image: mainImage,
-      color: selectedColor,
-      size: selectedSize,
-      product_img: product.product_img
+        id: product.id, 
+        product_name: product.name,
+        product_img: mainImage, 
+        product_variant_id: currentVariant.id, 
+        size: selectedSize,
+        color: selectedColor,
+        price: product.current_price, 
+        quantity: quantity,
+        total_price: product.current_price * quantity 
     };
 
     sessionStorage.setItem('checkoutItems', JSON.stringify([itemForCheckout]));
     sessionStorage.setItem('checkoutTotal', JSON.stringify(product.current_price * quantity));
 
-    // Điều hướng đến trang checkout
-    navigate('/checkout');
+    navigate('/checkout', {
+        state: {
+            items: [itemForCheckout],
+            total: product.current_price * quantity
+        }
+    });
   };
 
   const handleAddToCart = async () => {
@@ -92,7 +135,6 @@ const ProductDetail = ({ product }) => {
       return;
     }
 
-    // 📦 Tạo object product
     const productToAdd = {
       id: product.id,
       name: product.name,
@@ -100,13 +142,11 @@ const ProductDetail = ({ product }) => {
       product_img: mainImage,
     };
 
-    // Truyền thêm variantInfo chứa size và color
     const variantInfo = {
       size: selectedSize,
       color: selectedColor,
     };
 
-    // Gọi addToCart với 4 tham số
     const success = await addToCart(
       productToAdd,
       currentVariant.id, 
@@ -145,48 +185,62 @@ const ProductDetail = ({ product }) => {
             <div className="main-image">
               <img src={mainImage} alt={product.name} />
             </div>
+
+            {/* 🔥 Hiển thị ảnh từ displayImages */}
             <div className="thumbnail-images">
-              <img
-                src={product.product_img}
-                alt="main"
-                className={mainImage === product.product_img ? 'active' : ''}
-                onClick={() => setMainImage(product.product_img)}
-              />
-              {product.product_imgs?.map(img => (
-                <img
-                  key={img.id}
-                  src={img.PI_img}
-                  alt="product"
-                  className={mainImage === img.PI_img ? 'active' : ''}
-                  onClick={() => setMainImage(img.PI_img)}
-                />
+              {displayImages.map(img => (
+                <div key={img.id} className="thumbnail-wrapper">
+                  <img
+                    src={img.src}
+                    alt={img.alt}
+                    className={`${mainImage === img.src ? 'active' : ''} ${img.isVariant ? 'variant-thumb' : ''}`}
+                    onClick={() => setMainImage(img.src)}
+                  />
+                  {img.isVariant && (
+                    <span className="variant-badge">Variant</span>
+                  )}
+                </div>
               ))}
             </div>
           </div>
 
           {/* Nửa phải - Thông tin sản phẩm */}
           <div className="product-info-section">
-            <h1 className="product-name">{product.name}</h1>
+            <h1 className="product-name2">
+              {product.name}
+              {currentVariant?.sku && (
+                <span className="product-sku"> | SKU: {currentVariant.sku}</span>
+              )}
+            </h1>
 
-            <div className="product-rating" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <span style={{ fontSize: "16px", fontWeight: "500" }}>
-                    {Number.isInteger(product.average_rating)
+            {/* 🔥 Rating và Số lượt bán trên cùng 1 dòng */}
+            <div className="product-stats">
+              <div className="product-rating">
+                <span className="rating-number">
+                  {Number.isInteger(product.average_rating)
                     ? product.average_rating
-                    : product.average_rating.toFixed(1)}
+                    : product.average_rating?.toFixed(1) || 0}
                 </span>
 
-                <div className="rating-stars" style={{ display: "flex", gap: "3px", color: "#facc15" }}>
-                    {Array.from({ length: 5 }, (_, i) => (
+                <div className="rating-stars">
+                  {Array.from({ length: 5 }, (_, i) => (
                     <Star
-                        key={i}
-                        size={18}
-                        fill={i < Math.round(product.average_rating) ? "#facc15" : "none"}
-                        stroke="#facc15"
+                      key={i}
+                      size={18}
+                      fill={i < Math.round(product.average_rating || 0) ? "#facc15" : "none"}
+                      stroke="#facc15"
                     />
-                    ))}
+                  ))}
                 </div>
-            </div>
+              </div>
 
+              <div className="product-divider"></div>
+
+              <div className="product-sold">
+                <TrendingUp size={18} />
+                <span>Đã bán: <strong>{product.total_sold || 0}</strong></span>
+              </div>
+            </div>
 
             <div className="product-price">
               <span className="current-price">
@@ -253,7 +307,7 @@ const ProductDetail = ({ product }) => {
                   </button>
                   <input
                     type="number"
-                    className="qty-input"
+                    className="qty-input2"
                     value={quantity}
                     min="1"
                     max={currentVariant?.stock_quantity || 1}

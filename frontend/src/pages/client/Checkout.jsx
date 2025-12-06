@@ -2,19 +2,15 @@ import React, { useState, useEffect } from 'react';
 import './Checkout.css';
 import AddressService from '../../services/AddressService';
 import CartSummary from '../../components/CartItem/CartSummary'; 
+import { useNavigate } from 'react-router-dom'; 
+import { toast } from "react-toastify";
 
-const PROVINCES = {
-    "HN": { name: "Hà Nội", districts: ["Ba Đình", "Hoàn Kiếm", "Tây Hồ"] },
-    "HCM": { name: "TP. Hồ Chí Minh", districts: ["Quận 1", "Quận 2", "Quận 3"] },
-    "DN": { name: "Đà Nẵng", districts: ["Hải Châu", "Thanh Khê", "Sơn Trà"] },
-    "CT": { name: "Cần Thơ", districts: ["Ninh Kiều", "Bình Thủy", "Cờ Đỏ"] },
-    "HP": { name: "Hải Phòng", districts: ["Hồng Bàng", "Ngô Quyền", "Lê Chân"] }
-};
 
-const Checkout = ({ cartItems = [], totalAmount = 0, onBack = () => {}, onCheckoutSuccess = () => {} }) => {
+const Checkout = ({ cartItems = [], totalAmount = 0, onBack = () => {} }) => {
     const [addresses, setAddresses] = useState([]);
     const [selectedAddressId, setSelectedAddressId] = useState(null);
     const [loading, setLoading] = useState(false);
+    const navigate = useNavigate(); 
     
     const [formData, setFormData] = useState({
         shippingMethod: 'standard',
@@ -25,7 +21,6 @@ const Checkout = ({ cartItems = [], totalAmount = 0, onBack = () => {}, onChecko
     const [isProcessing, setIsProcessing] = useState(false); 
     const [errors, setErrors] = useState({});
 
-    // Cần tính lại chi phí và tổng tiền dựa trên shippingMethod đã chọn
     const shippingCost = formData.shippingMethod === 'express' ? 30000 : 15000;
     const finalTotal = totalAmount + shippingCost;
 
@@ -69,44 +64,80 @@ const Checkout = ({ cartItems = [], totalAmount = 0, onBack = () => {}, onChecko
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
-        if (!validateForm()) return;
-        
-        setIsProcessing(true);
-        const selectedAddress = addresses.find(addr => addr.id === selectedAddressId);
 
-        // 1. Chuẩn bị dữ liệu đặt hàng
+        if (!validateForm()) {
+            toast.warning("Vui lòng chọn địa chỉ giao hàng!", {
+                position: "bottom-right"
+            });
+            return;
+        }
+
+        if (cartItems.length === 0) {
+            toast.warning("Giỏ hàng của bạn đang trống!", {
+                position: "bottom-right"
+            });
+            return;
+        }
+
+        setIsProcessing(true);
+
+        const selectedAddress = addresses.find(addr => addr.id === selectedAddressId);
+        if (!selectedAddress) {
+            toast.error("Không tìm thấy địa chỉ giao hàng!", {
+                position: "bottom-right"
+            });
+            return;
+        }
+
+        const userId = JSON.parse(localStorage.getItem("user"))?.id;
+
         const orderData = {
+            customer: userId,
+            address: selectedAddress.id,
+            ship_method: formData.shippingMethod,
+            payment_method: formData.paymentMethod,
+            note: formData.notes,
             items: cartItems.map(item => ({
-                product_id: item.product_id,
-                variant_id: item.product_variant_id,
+                product_variant: item.variantId,
                 quantity: item.quantity,
-                price: item.current_price,
-            })),
-            shippingAddress: selectedAddress,
-            shippingMethod: formData.shippingMethod,
-            paymentMethod: formData.paymentMethod,
-            notes: formData.notes,
-            total: finalTotal,
+                price: item.price
+            }))
         };
 
         try {
-            // const response = await OrderService.placeOrder(orderData); // Gọi API thật
-            
-            // Mô phỏng thành công
-            await new Promise(resolve => setTimeout(resolve, 1500)); 
+            const response = await fetch("http://127.0.0.1:8000/api/orders/create/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + localStorage.getItem("accessToken")
+                },
+                body: JSON.stringify(orderData)
+            });
 
-            console.log('Order Data Sent Successfully:', orderData);
+            const result = await response.json();
 
-            onCheckoutSuccess(); 
+            if (response.ok) {
+                navigate('/order-success', {
+                    state: { orderDetails: result }
+                });
+
+            } else {
+                toast.error(result.error || "Không thể tạo đơn hàng!", {
+                    position: "bottom-right"
+                });
+            }
 
         } catch (error) {
-            console.error('Error placing order:', error);
-            alert('Đã xảy ra lỗi khi đặt hàng. Vui lòng thử lại.');
+            console.error("API Error:", error);
+            toast.error("Lỗi kết nối với server!", {
+                position: "bottom-right"
+            });
+
         } finally {
             setIsProcessing(false);
         }
     };
+
 
     return (
         <div className="checkout-container">
@@ -139,7 +170,7 @@ const Checkout = ({ cartItems = [], totalAmount = 0, onBack = () => {}, onChecko
                                                 <p className="address-detail">
                                                     <span>Địa chỉ: </span> 
                                                     {address.address && `${address.address}, `}
-                                                    {address.district}, {PROVINCES[address.province]?.name}
+                                                    {address.district}, {address.province}
                                                 </p>
                                             </div>
                                         </label>
@@ -199,14 +230,7 @@ const Checkout = ({ cartItems = [], totalAmount = 0, onBack = () => {}, onChecko
                                         <span className="radio-description">Chuyển khoản qua tài khoản ngân hàng</span>
                                     </div>
                                 </label>
-                                <label className="radio-option">
-                                    <input type="radio" name="paymentMethod" value="wallet"
-                                        checked={formData.paymentMethod === 'wallet'} onChange={handleInputChange} />
-                                    <div className="radio-content">
-                                        <span className="radio-label">Ví điện tử</span>
-                                        <span className="radio-description">Thanh toán qua Momo, ZaloPay, v.v.</span>
-                                    </div>
-                                </label>
+                                
                             </div>
                         </div>
 

@@ -24,6 +24,7 @@ def add_address(request, account_id):
             receiver_name=data.get("receiver_name"),
             phone=data.get("phone"),
             province=data.get("province"),
+            district = data.get("district"),
             ward=data.get("ward"),
             address_detail=data.get("address_detail"),
             is_default=is_default

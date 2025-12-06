@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import {jwtDecode} from "jwt-decode";
 
 const AuthContext = createContext(null);
-const REFRESH_URL = "/account/token/refresh/"; 
+const REFRESH_URL = "http://127.0.0.1:8000/account/token/refresh/"; 
 
 export const useAuth = () => useContext(AuthContext);
 

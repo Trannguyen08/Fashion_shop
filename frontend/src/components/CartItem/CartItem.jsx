@@ -8,31 +8,46 @@ const CartItem = ({ item, isSelected, onCheckbox, onDelete }) => {
   
   const debounceTimer = useRef(null);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [localQuantity, setLocalQuantity] = useState(item.quantity);
 
-  // 🔥 Cập nhật số lượng với debounce
+  // localQuantity luôn được giới hạn bởi stock
+  const maxStock = item.stock || 1;
+  const [localQuantity, setLocalQuantity] = useState(
+    Math.min(item.quantity, maxStock)
+  );
+
+  // 🔥 Hàm xử lý số lượng có giới hạn tồn kho
   const handleQuantityChange = async (newQuantity) => {
     if (newQuantity < 1) return;
 
-    // 1️⃣ Cập nhật UI ngay
+    // 🚫 Nếu vượt tồn kho → fix lại ngay
+    if (newQuantity > maxStock) {
+      newQuantity = maxStock;
+    }
+
+    // UI update ngay
     setLocalQuantity(newQuantity);
 
-    // 2️⃣ Clear timer cũ
+    // Xóa timer cũ
     if (debounceTimer.current) {
       clearTimeout(debounceTimer.current);
     }
 
-    // 3️⃣ Debounce API call
-    setIsUpdating(true);
+    // Debounce update DB 3 giây
     debounceTimer.current = setTimeout(async () => {
-      const success = await updateCartItem(item.id, item.product_variant_id, newQuantity);
+      setIsUpdating(true);
+
+      const success = await updateCartItem(
+        item.id,
+        item.product_variant_id,
+        newQuantity
+      );
+
       setIsUpdating(false);
-      
+
       if (!success) {
-        console.error('❌ Cập nhật thất bại');
-        setLocalQuantity(item.quantity); // Rollback
+        setLocalQuantity(item.quantity); // rollback nếu lỗi
       }
-    }, 500);
+    }, 3000);
   };
 
   // ❌ Xóa sản phẩm
@@ -71,15 +86,16 @@ const CartItem = ({ item, isSelected, onCheckbox, onDelete }) => {
           }}
         />
         <div className="item-info">
-          <h3 className="item-name" title={item.product_name}>
+          <h2 className="item-name" title={item.product_name}>
             {item.product_name?.length > 40 
               ? item.product_name.substring(0, 40) + '...' 
               : item.product_name}
-          </h3>
+          </h2>
           <p className="item-details">
             <span className="detail-label">Size:</span> {item.size || 'N/A'} | 
             <span className="detail-label"> Màu:</span> {item.color || 'N/A'}
           </p>
+
         </div>
       </div>
 
@@ -99,23 +115,29 @@ const CartItem = ({ item, isSelected, onCheckbox, onDelete }) => {
         >
           −
         </button>
+
         <input
           type="number"
           value={localQuantity}
           onChange={(e) => {
-            const newQty = parseInt(e.target.value) || 1;
-            if (newQty >= 1) {
-              handleQuantityChange(newQty);
-            }
+            let newQty = parseInt(e.target.value) || 1;
+
+            // Nếu nhập vượt stock → tự fix
+            if (newQty > maxStock) newQty = maxStock;
+            if (newQty < 1) newQty = 1;
+
+            handleQuantityChange(newQty);
           }}
           className="qty-input"
           min="1"
+          max={maxStock}
           disabled={isUpdating}
         />
+
         <button 
           className="qty-btn"
           onClick={() => handleQuantityChange(localQuantity + 1)}
-          disabled={isUpdating}
+          disabled={localQuantity >= maxStock || isUpdating}
         >
           +
         </button>
@@ -124,7 +146,7 @@ const CartItem = ({ item, isSelected, onCheckbox, onDelete }) => {
       {/* Total price */}
       <div className="item-total">
         <span className="total-amount">
-          {parseFloat(item.total_price || 0).toLocaleString('vi-VN')}₫
+          {(localQuantity * item.current_price).toLocaleString('vi-VN')}₫
         </span>
       </div>
 

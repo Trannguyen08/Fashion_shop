@@ -13,6 +13,7 @@ import CheckoutPage from '../pages/client/CheckoutPage';
 import Profile from '../pages/client/Profile';
 import ProductDetail from '../components/Product/ProductDetail';
 import Cart from '../pages/client/Cart';
+import OrderSuccess from '../pages/client/OrderSuccess';
 
 // ADMIN IMPORTS
 import AdminLayout from '../layouts/AdminLayout'; // Layout Admin
@@ -48,6 +49,7 @@ export default function RouteConfig() {
         <Route path="/new-arrival" element={<Category />} />
         <Route path="/product/:productId" element={<ProductDetailPage />} />
         <Route path="/search" element={<Category />} />
+        <Route path="/order-success" element={<OrderSuccess />} />
       </Route>
 
       <Route path="/register" element={<Register />} />

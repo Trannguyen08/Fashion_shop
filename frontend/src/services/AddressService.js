@@ -1,7 +1,7 @@
 // src/services/AddressService.js
 import axios from 'axios';
 
-const API_BASE_URL = 'http://127.0.0.1:8000/customers'; // Thay đổi URL theo backend của bạn
+const API_BASE_URL = 'http://127.0.0.1:8000/customers'; 
 
 class AddressService {
   // Lấy account_id từ localStorage
@@ -38,7 +38,8 @@ class AddressService {
           receiver_name: addressData.recipientName,
           phone: addressData.recipientPhone,
           province: addressData.province,
-          ward: addressData.district,
+          district: addressData.district,
+          ward: addressData.ward,
           address_detail: addressData.address,
           is_default: addressData.isDefault || false
         }
@@ -66,7 +67,8 @@ class AddressService {
           receiver_name: addressData.recipientName,
           phone: addressData.recipientPhone,
           province: addressData.province,
-          ward: addressData.district,
+          district: addressData.district,
+          ward: addressData.ward,
           address_detail: addressData.address,
           is_default: addressData.isDefault || false
         }
@@ -173,7 +175,8 @@ class AddressService {
       recipientName: backendAddress.receiver_name,
       recipientPhone: backendAddress.phone,
       province: backendAddress.province,
-      district: backendAddress.ward,
+      district: backendAddress.district,
+      ward: backendAddress.ward,
       address: backendAddress.address_detail,
       isDefault: backendAddress.is_default
     };
