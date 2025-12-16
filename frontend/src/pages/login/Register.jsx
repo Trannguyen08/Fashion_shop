@@ -1,33 +1,49 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from '../../context/AuthContext';
+import axios from "axios";
+import { useAuth } from "../../context/AuthContext";
 import styles from "./Register.module.css";
+import LoadingSpinner from "../../components/LoadingSpinner";
+import {
+  validateUsername,
+  validateFullName,
+  validatePhone,
+  validateEmail,
+  validatePassword,
+} from "../../utils/validators";
+
 
 export default function Register() {
   const { login } = useAuth();
+  const navigate = useNavigate();
+
   const [username, setUsername] = useState("");
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
 
   const validateInputs = () => {
-    const usernameRegex = /^[A-Za-z0-9_]{3,}$/;
-    if (!usernameRegex.test(username.trim())) return "Tên đăng nhập không hợp lệ!";
+    let validationError;
 
-    const nameRegex = /^[A-Za-zÀ-ỹ\s]{3,}$/u;
-    if (!nameRegex.test(fullName.trim())) return "Họ tên không hợp lệ!";
+    validationError = validateUsername(username);
+    if (validationError) return validationError;
 
-    const phoneRegex = /^(0|\+84)(3|5|7|8|9)[0-9]{8}$/;
-    if (!phoneRegex.test(phone)) return "Số điện thoại không hợp lệ!";
+    validationError = validateFullName(fullName);
+    if (validationError) return validationError;
 
-    const emailRegex = /^[\w.-]+@[a-zA-Z\d.-]+\.[a-zA-Z]{2,}$/;
-    if (!emailRegex.test(email)) return "Email không hợp lệ!";
+    validationError = validatePhone(phone);
+    if (validationError) return validationError;
 
-    if (password.length < 6) return "Mật khẩu phải có ít nhất 6 ký tự.";
+    validationError = validateEmail(email);
+    if (validationError) return validationError;
+
+    validationError = validatePassword(password);
+    if (validationError) return validationError;
 
     return "";
   };
@@ -43,111 +59,114 @@ export default function Register() {
       return;
     }
 
+    setLoading(true);
+
     try {
-      const response = await fetch("http://127.0.0.1:8000/account/register/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const response = await axios.post(
+        "http://127.0.0.1:8000/account/register/",
+        {
           username: username.trim(),
           full_name: fullName.trim(),
           phone: phone.trim(),
           email: email.trim(),
           password: password.trim(),
-        }),
-      });
+        }
+      );
 
-      const data = await response.json();
+      const data = response.data;
+      login(data);
 
-      if (response.ok) {
-        login(data);
-        setSuccess(`Đăng ký thành công! Chào mừng ${data.full_name || fullName}!`);
-        setUsername("");
-        setFullName("");
-        setPhone("");
-        setEmail("");
-        setPassword("");
+      setSuccess(`Đăng ký thành công! Chào mừng ${data.full_name || fullName}!`);
 
-        navigate("/");
+      // Xóa form sau khi đăng ký thành công
+      setUsername("");
+      setFullName("");
+      setPhone("");
+      setEmail("");
+      setPassword("");
+
+      navigate("/");
+    } catch (err) {
+      console.error("Lỗi khi đăng ký:", err);
+
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
       } else {
-        setError(data.message || "Đăng ký thất bại! Vui lòng thử lại.");
+        setError("Đăng ký thất bại! Vui lòng thử lại.");
       }
-    } catch (error) {
-      console.error("Lỗi khi gọi API:", error);
-      setError("Không thể kết nối tới máy chủ. Vui lòng thử lại sau.");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className={styles.page}>
-      <div className={styles.overlay}></div>
+    <>
+      <LoadingSpinner show={loading} />
 
-      <form className={styles.card} onSubmit={handleSubmit}>
-        <h2 className={styles.title}>ĐĂNG KÝ</h2>
+      <div className={styles.page}>
+        <div className={styles.overlay}></div>
 
-        {/* --- Username --- */}
-        <label>Tên đăng nhập</label>
-        <input
-          type="text"
-          placeholder="Nhập tên đăng nhập"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          required
-        />
+        <form className={styles.card} onSubmit={handleSubmit}>
+          <h2 className={styles.title}>ĐĂNG KÝ</h2>
 
-        {/* --- Full Name --- */}
-        <label>Họ và tên</label>
-        <input
-          type="text"
-          placeholder="Nhập họ và tên"
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-          required
-        />
+          <label>Tên đăng nhập</label>
+          <input
+            type="text"
+            placeholder="Nhập tên đăng nhập"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+          />
 
-        {/* --- Phone --- */}
-        <label>Số điện thoại</label>
-        <input
-          type="tel"
-          placeholder="0901234567"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          required
-        />
+          <label>Họ và tên</label>
+          <input
+            type="text"
+            placeholder="Nhập họ và tên"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            required
+          />
 
-        {/* --- Email --- */}
-        <label>Email</label>
-        <input
-          type="email"
-          placeholder="name@example.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
+          <label>Số điện thoại</label>
+          <input
+            type="tel"
+            placeholder="0901234567"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            required
+          />
 
-        {/* --- Password --- */}
-        <label>Mật khẩu</label>
-        <input
-          type="password"
-          placeholder="Nhập mật khẩu"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
+          <label>Email</label>
+          <input
+            type="email"
+            placeholder="name@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
 
-        {error && <p className={styles.error}>{error}</p>}
-        {success && <p className={styles.success}>{success}</p>}
+          <label>Mật khẩu</label>
+          <input
+            type="password"
+            placeholder="Nhập mật khẩu"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
 
-        <button type="submit" className={styles.btn}>
-          Đăng ký
-        </button>
+          {error && <p className={styles.error}>{error}</p>}
+          {success && <p className={styles.success}>{success}</p>}
 
-        <p className={styles.switchText}>
-          Đã có tài khoản?{" "}
-          <Link to="/login" className={styles.link}>
-            Đăng nhập
-          </Link>
-        </p>
-      </form>
-    </div>
+          <button type="submit" className={styles.btn} disabled={loading}>
+            Đăng ký
+          </button>
+
+          <p className={styles.switchText}>
+            Đã có tài khoản?
+            <Link to="/login" className={styles.link}>Đăng nhập</Link>
+          </p>
+        </form>
+      </div>
+    </>
   );
 }

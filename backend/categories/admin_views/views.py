@@ -5,7 +5,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from categories.models import Category
 from categories.serializers import CategorySerializer
-from utils.delete_product_cache import delete_cache
+from utils.delete_cache import delete_product_cache
 
 @csrf_exempt
 @api_view(['GET'])
@@ -42,7 +42,7 @@ def add_category(request):
         )
         category.save()
         cache.delete("all_categories")
-        delete_cache()
+        delete_product_cache()
 
         serializer = CategorySerializer(category)
         return JsonResponse(
@@ -71,7 +71,7 @@ def update_category(request, category_id):
         category.save()
 
         cache.delete("all_categories")
-        delete_cache()
+        delete_product_cache()
 
         serializer = CategorySerializer(category)
         return JsonResponse({"message": "Category updated successfully.", "category": serializer.data}, status=200)
@@ -90,7 +90,7 @@ def delete_category(request, category_id):
 
         category.delete()
         cache.delete("all_categories")
-        delete_cache()
+        delete_product_cache()
 
         return JsonResponse({"message": "Category deleted successfully."}, status=200)
     except Exception as e:

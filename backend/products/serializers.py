@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Product, ProductImage, ProductVariant, Review
+from .models import Product, ProductImage, ProductVariant
 from utils.cloudinary_helper import get_cloudinary_url
 
 class ProductImageSerializer(serializers.ModelSerializer):
@@ -45,10 +45,3 @@ class ProductSerializer(serializers.ModelSerializer):
             return get_cloudinary_url(str(obj.product_img.url))
         return None
 
-class ReviewSerializer(serializers.ModelSerializer):
-    full_name = serializers.CharField(source='account.user.full_name', read_only=True)
-    avatar_img = serializers.ImageField(source='account.user.avatar_img', read_only=True, allow_null=True, use_url=True)
-
-    class Meta:
-        model = Review
-        fields = ['id', 'full_name', 'avatar_img', 'rating', 'comment']

@@ -24,10 +24,13 @@ urlpatterns = [
     path('api/account/', include('accounts.admin_views.urls')),
     path('product/', include('products.client_views.urls')),
     path('api/product/', include('products.admin_views.urls')),
+    path('review/', include('reviews.client_views.urls')),
+    path('api/review/', include('reviews.admin_views.urls')),
     path('category/', include('categories.client_views.urls')),
     path('api/category/', include('categories.admin_views.urls')),
     path('cart/', include('cart.urls')),
     path('customers/', include('customers.urls')),
+    path('order/', include('orders.urls')),
 
     # Swagger UI
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),

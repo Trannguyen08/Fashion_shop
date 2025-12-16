@@ -42,20 +42,11 @@ const CheckoutPage = () => {
 
   // 🔥 Xử lý thanh toán thành công
   const handleSuccessfulCheckout = async (itemsToClear) => {
-    // 1. Xóa các item đã thanh toán khỏi giỏ hàng chính thức (cart state)
-    // Giả sử API backend tự động xử lý khi có order mới, hoặc ta cần gọi
-    // hàm xóa từng item một (nếu dùng local storage hoặc không có API tổng)
-
     const user = JSON.parse(localStorage.getItem('user'));
 
     if (user?.id) {
-        // Nếu có user, chỉ cần sync lại cart từ DB sau khi backend xử lý order
-        // (Đây là cách lý tưởng nếu API order tự động cập nhật giỏ hàng)
         await syncCartFromDB(user.id);
     } else {
-        // Nếu không có user (local storage), ta phải xóa thủ công
-        // Lưu ý: Nếu ID trong checkoutItems là ID của cart item (item.id) thì mới xóa được.
-        // Giả định: item.id trong checkoutData là cartItemId
         for (const item of itemsToClear) {
             await removeFromCart(item.id); 
         }

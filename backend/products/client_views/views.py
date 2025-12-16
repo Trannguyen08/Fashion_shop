@@ -1,9 +1,12 @@
+from django.db.models import Q
 from django.http import JsonResponse
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from django.core.cache import cache
-from products.models import Product, Review, Category
-from products.serializers import ProductSerializer, ReviewSerializer
+from products.models import Product
+from products.serializers import ProductSerializer
+from reviews.models import Review
+from reviews.serializers import ReviewSerializer
 
 
 @api_view(['GET'])
@@ -37,6 +40,7 @@ def get_home_product(request):
     NEW_KEY = "home_new_products"
     REVIEW_KEY = "home_review"
 
+    cache.delete(REVIEW_KEY)
     featured = cache.get(FEATURED_KEY)
     news = cache.get(NEW_KEY)
     reviews = cache.get(REVIEW_KEY)
@@ -59,9 +63,12 @@ def get_home_product(request):
         cache.set(NEW_KEY, news, timeout=86400)
 
     if reviews is None:
-        review_qs = Review.objects.select_related(
-            'account'
-        ).order_by('-rating')[:4]
+        review_qs = Review.objects.filter(is_browse=False
+                    ).select_related(
+                        'product'
+                    ).prefetch_related(
+                        'account__user'
+                    ).all().order_by('-review_date')[:4]
         reviews = ReviewSerializer(review_qs, many=True).data
         cache.set(REVIEW_KEY, reviews, timeout=86400)
 
@@ -120,7 +127,10 @@ def get_search_products(request):
     if bs_product is None:
         product_qs = Product.objects.select_related("category").prefetch_related(
             'product_imgs', 'product_variants'
-        ).filter(name__icontains=search)
+        ).filter(
+            Q(name__icontains=search) |
+            Q(product_variants__sku__icontains=search)
+        ).distinct()
         bs_product = ProductSerializer(product_qs, many=True).data
         cache.set(KEY, bs_product, timeout=86400)
 

@@ -4,24 +4,24 @@
 
 /* Banner */
 .shop-category-banner {
-  background: linear-gradient(135deg, #e70463 0%, #d90259 100%);
-  color: white;
-  padding: 40px 20px;
-  text-align: center;
   position: relative;
+  height: 30vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
   overflow: hidden;
+  background-image: url("https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?auto=format&fit=crop&w=1600&q=80");
+  background-size: cover;
+  background-position: center;
 }
 
 .shop-category-banner::before {
   content: "";
   position: absolute;
-  top: -50%;
-  right: -50%;
-  width: 400px;
-  height: 400px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 50%;
-  pointer-events: none;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 0;
 }
 
 .shop-category-banner::after {

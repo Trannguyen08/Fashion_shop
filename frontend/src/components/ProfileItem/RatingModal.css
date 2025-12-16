@@ -1,0 +1,4 @@
+.star-rating-container .star {
+    /* Đảm bảo khoảng cách giữa các ngôi sao */
+    margin: 0 2px; 
+}

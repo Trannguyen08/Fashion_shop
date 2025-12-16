@@ -1,0 +1,260 @@
+/* HEADER NEW */
+.order-header-new {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px 15px;
+  background: #f5f5f5;
+  border-bottom: 1px solid #eee;
+  align-items: center;
+  border-radius: 5px !important;
+}
+
+.tab-content h2{
+    margin-bottom: 15px !important;
+    border: none !important;
+    padding-bottom: 0 !important;
+}
+.od-hd-content {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+.orders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.od-id {
+  margin: 0;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.od-date {
+  font-size: 13px;
+  color: #666;
+  margin: 0 !important;
+  margin-left: 15px !important;
+}
+
+.status-wrap {
+  display: flex;
+  gap: 6px;
+}
+
+.status-badge-new {
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.order-card {
+    border: 1px solid #f30000;
+    border-radius: 5px !important;
+}
+/* Ship status */
+.ship-pending { background: #fff3cd; color: #856404; }
+.ship-delivering { background: #cfe2ff; color: #0d6efd; }
+.ship-shipped { background: #d4edda; color: #155724; }
+
+/* Payment status */
+.pay-paid { background: #d4edda; color: #155724; }
+.pay-unpaid { background: #f8d7da; color: #721c24; }
+
+/* ITEMS NEW */
+.order-items-new {
+  padding: 10px 15px;
+  border-bottom: 1px solid #cacaca;
+}
+
+.order-item-row {
+  display: grid;
+  grid-template-columns: 70px 1fr 120px;
+  align-items: center;
+  gap: 15px;
+  border-bottom: 1px solid #f2f2f2;
+}
+
+.order-item-row:last-child {
+  border-bottom: none;
+}
+
+/* Ảnh */
+.od-item-img {
+  width: 70px;
+  height: 70px;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+/* Vùng chứa tên + variant */
+.od-item-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.od-item-name {
+  font-weight: 600;
+  font-size: 14px;
+  margin: 0;
+}
+
+.od-item-variant {
+  font-size: 13px;
+  color: #777;
+  margin: 0;
+}
+
+/* Số lượng + đơn giá */
+.od-item-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.od-item-qty {
+  font-size: 14px;
+  color: #444;
+  margin: 0;
+}
+
+.od-item-price {
+  font-size: 14px;
+  color: #000;
+  margin: 0;
+}
+
+.od-item-total {
+  align-items: center;
+  font-weight: 600;
+  font-size: 16px;
+  color: #e70463;
+}
+
+
+/* FOOTER NEW */
+.order-footer-new {
+  padding: 10px 15px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.footer-right {
+  display: flex;
+  gap: 10px;
+}
+
+.od-btn {
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.od-btn-detail { background: #e70463; color: white; }
+.od-btn-detail:hover { background: #c70355; }
+
+.od-btn-cancel { background: #f8d7da; color: #721c24; }
+.od-btn-rate { background: #cce5ff; color: #004085; }
+
+/* THANH LỌC TRẠNG THÁI */
+.status-filter-bar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #f0f0f0;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.filter-btn {
+  padding: 5px 15px;
+  border: 2px solid #e0e0e0;
+  border-radius: 25px;
+  background: white;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: #666;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.filter-btn:hover {
+  border-color: #e70463;
+  color: #e70463;
+  background: #fff5f8;
+}
+
+.filter-btn.active {
+  background: #e70463;
+  color: white;
+  border-color: #e70463;
+}
+
+.filter-count {
+  font-size: 12px;
+  font-weight: 500;
+  opacity: 0.8;
+}
+
+/* PHÂN TRANG */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 5px;
+  padding: 0 !important;
+  border: none !important;
+}
+
+.page-btn {
+  padding: 5px 7px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: white;
+  color: #333;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  min-width: 40px;
+}
+
+.page-btn:hover:not(:disabled) {
+  background: #e70463;
+  color: white;
+  border-color: #e70463;
+}
+
+.page-btn.active {
+  background: #e70463;
+  color: white;
+  border-color: #e70463;
+  font-weight: 600;
+}
+
+.page-btn:disabled {
+  background: #f5f5f5;
+  color: #ccc;
+  cursor: not-allowed;
+  border-color: #e0e0e0;
+}
+
+.profile-content {
+  padding-bottom: 0px !important;
+}

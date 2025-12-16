@@ -1,7 +1,7 @@
 from django.core.cache import cache
 from django.http import JsonResponse
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.db.models import Q
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
@@ -83,7 +83,7 @@ def login_view(request):
     refresh = RefreshToken.for_user(account)
 
     return JsonResponse({
-        "message": "Đăng nhập thành công",
+        "message": "success",
         "access_token": str(refresh.access_token),
         "refresh_token": str(refresh),
         "user": {
@@ -101,23 +101,35 @@ def login_view(request):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def refresh_token_view(request):
-    data = request.data
-    refresh_token_str = data.get("refresh_token")
+    refresh_token_str = request.data.get("refresh_token")
 
     if not refresh_token_str:
         return JsonResponse({'error': 'Thiếu refresh token'}, status=400)
 
     try:
         refresh = RefreshToken(refresh_token_str)
-        new_access_token = str(refresh.access_token)
-        new_refresh_token = str(RefreshToken.for_user(refresh.user))
+
+        account_id = refresh.get("account_id")
+        if account_id is None:
+            return JsonResponse({'error': 'Refresh Token không chứa account_id'}, status=401)
+
+        # Lấy user từ DB
+        user = Account.objects.get(id=account_id)
+
+        new_refresh = RefreshToken.for_user(user)
+        new_access = new_refresh.access_token
 
         return JsonResponse({
-            "access_token": new_access_token,
-            "refresh_token": new_refresh_token
+            "access_token": str(new_access),
+            "refresh_token": str(new_refresh)
         }, status=200)
-    except TokenError as e:
-        return JsonResponse({'error': f'Refresh Token không hợp lệ: {str(e)}'}, status=401)
+
+    except TokenError:
+        return JsonResponse({'error': 'Refresh Token không hợp lệ'}, status=401)
+
+    except Account.DoesNotExist:
+        return JsonResponse({'error': 'User không tồn tại'}, status=404)
+
 
 
 @api_view(['GET'])
@@ -163,4 +175,28 @@ def update_user_info(request, account_id):
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
 
+
+@api_view(['PUT'])
+@permission_classes([AllowAny])
+def change_password(request):
+    try:
+        data = request.data
+        user = request.user
+
+        current_password = data.get("current_password")
+        new_password = data.get("new_password")
+
+        account = Account.objects.get(id=user.id)
+
+        if not account.check_password(current_password):
+            return JsonResponse({"error": "Mật khẩu hiện tại không chính xác!"}, status=400)
+
+        # Đặt mật khẩu mới
+        account.set_password(new_password)
+        account.save()
+
+        return JsonResponse({"message": "Đổi mật khẩu thành công!"}, status=200)
+
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
 

@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCartContext } from '../../context/CartContext';
-import { Star } from "lucide-react";
+import { Star, TrendingUp } from "lucide-react";
 import { formatPrice } from '../../utils/formatUtils';
+import userImage from '../../assets/images/user.png';
+import axios from 'axios';
 import './ProductDetail.css';
 
 const ProductDetail = ({ product }) => {
@@ -12,6 +14,8 @@ const ProductDetail = ({ product }) => {
   const [selectedSize, setSelectedSize] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [mainImage, setMainImage] = useState(null);
+  const [reviews, setReviews] = useState([]);
+  const [loadingReviews, setLoadingReviews] = useState(false);
   
   const { addToCart } = useCartContext();
 
@@ -23,8 +27,31 @@ const ProductDetail = ({ product }) => {
         setSelectedColor(product.product_variants[0].color);
         setSelectedSize(product.product_variants[0].size);
       }
+
+      // Fetch reviews
+      fetchReviews(product.id);
     }
   }, [product]);
+
+  const fetchReviews = async (productId) => {
+    setLoadingReviews(true);
+    try {
+      const response = await axios.get(`http://127.0.0.1:8000/review/all-reviews/${productId}/`,
+        {
+          headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('accessToken')
+          }
+        }
+      );
+      console.log('Fetched reviews:', response.data);
+      setReviews(response.data.data || []);
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
+      setReviews([]);
+    } finally {
+      setLoadingReviews(false);
+    }
+  };
 
   const colors = useMemo(() => {
     if (!product?.product_variants) return [];
@@ -42,6 +69,37 @@ const ProductDetail = ({ product }) => {
       v => v.color === selectedColor && v.size === selectedSize
     );
   }, [product, selectedColor, selectedSize]);
+
+  const displayImages = useMemo(() => {
+    const images = [
+      { id: 'main', src: product?.product_img, alt: 'main' }
+    ];
+
+    if (product?.product_imgs?.length > 0) {
+      product.product_imgs.forEach(img => {
+        images.push({ id: `img_${img.id}`, src: img.PI_img, alt: 'product' });
+      });
+    }
+
+    if (currentVariant?.variant_img) {
+      images.push({
+        id: `variant_${currentVariant.id}`,
+        src: currentVariant.variant_img,
+        alt: `${currentVariant.color} - ${currentVariant.size}`,
+        isVariant: true
+      });
+    }
+
+    return images;
+  }, [product, currentVariant]);
+
+  useEffect(() => {
+    if (currentVariant?.variant_img) {
+      setMainImage(currentVariant.variant_img);
+    } else {
+      setMainImage(product?.product_img);
+    }
+  }, [currentVariant, product]);
 
   const handleColorChange = (color) => {
     setSelectedColor(color);
@@ -67,23 +125,27 @@ const ProductDetail = ({ product }) => {
       return;
     }
 
-    // Lưu thông tin sản phẩm vào sessionStorage
     const itemForCheckout = {
-      id: product.id,
-      name: product.name,
-      price: product.current_price,
-      quantity: quantity,
-      image: mainImage,
-      color: selectedColor,
-      size: selectedSize,
-      product_img: product.product_img
+        id: product.id, 
+        product_name: product.name,
+        product_img: mainImage, 
+        product_variant_id: currentVariant.id, 
+        size: selectedSize,
+        color: selectedColor,
+        price: product.current_price, 
+        quantity: quantity,
+        total_price: product.current_price * quantity 
     };
 
     sessionStorage.setItem('checkoutItems', JSON.stringify([itemForCheckout]));
     sessionStorage.setItem('checkoutTotal', JSON.stringify(product.current_price * quantity));
 
-    // Điều hướng đến trang checkout
-    navigate('/checkout');
+    navigate('/checkout', {
+        state: {
+            items: [itemForCheckout],
+            total: product.current_price * quantity
+        }
+    });
   };
 
   const handleAddToCart = async () => {
@@ -92,7 +154,6 @@ const ProductDetail = ({ product }) => {
       return;
     }
 
-    // 📦 Tạo object product
     const productToAdd = {
       id: product.id,
       name: product.name,
@@ -100,13 +161,11 @@ const ProductDetail = ({ product }) => {
       product_img: mainImage,
     };
 
-    // Truyền thêm variantInfo chứa size và color
     const variantInfo = {
       size: selectedSize,
       color: selectedColor,
     };
 
-    // Gọi addToCart với 4 tham số
     const success = await addToCart(
       productToAdd,
       currentVariant.id, 
@@ -135,7 +194,6 @@ const ProductDetail = ({ product }) => {
 
           {/* Nửa trái - Hình ảnh */}
           <div className="product-images-section">
-            {/* Tag NEW */}
             {product.is_new && (
               <div className="product-new-tag">
                 New
@@ -145,48 +203,60 @@ const ProductDetail = ({ product }) => {
             <div className="main-image">
               <img src={mainImage} alt={product.name} />
             </div>
+
             <div className="thumbnail-images">
-              <img
-                src={product.product_img}
-                alt="main"
-                className={mainImage === product.product_img ? 'active' : ''}
-                onClick={() => setMainImage(product.product_img)}
-              />
-              {product.product_imgs?.map(img => (
-                <img
-                  key={img.id}
-                  src={img.PI_img}
-                  alt="product"
-                  className={mainImage === img.PI_img ? 'active' : ''}
-                  onClick={() => setMainImage(img.PI_img)}
-                />
+              {displayImages.map(img => (
+                <div key={img.id} className="thumbnail-wrapper">
+                  <img
+                    src={img.src}
+                    alt={img.alt}
+                    className={`${mainImage === img.src ? 'active' : ''} ${img.isVariant ? 'variant-thumb' : ''}`}
+                    onClick={() => setMainImage(img.src)}
+                  />
+                  {img.isVariant && (
+                    <span className="variant-badge">Variant</span>
+                  )}
+                </div>
               ))}
             </div>
           </div>
 
           {/* Nửa phải - Thông tin sản phẩm */}
           <div className="product-info-section">
-            <h1 className="product-name">{product.name}</h1>
+            <h1 className="product-name2">
+              {product.name}
+              {currentVariant?.sku && (
+                <span className="product-sku"> | SKU: {currentVariant.sku}</span>
+              )}
+            </h1>
 
-            <div className="product-rating" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <span style={{ fontSize: "16px", fontWeight: "500" }}>
-                    {Number.isInteger(product.average_rating)
+            <div className="product-stats">
+              <div className="product-rating">
+                <span className="rating-number">
+                  {Number.isInteger(product.average_rating)
                     ? product.average_rating
-                    : product.average_rating.toFixed(1)}
+                    : product.average_rating?.toFixed(1) || 0}
                 </span>
 
-                <div className="rating-stars" style={{ display: "flex", gap: "3px", color: "#facc15" }}>
-                    {Array.from({ length: 5 }, (_, i) => (
+                <div className="rating-stars">
+                  {Array.from({ length: 5 }, (_, i) => (
                     <Star
-                        key={i}
-                        size={18}
-                        fill={i < Math.round(product.average_rating) ? "#facc15" : "none"}
-                        stroke="#facc15"
+                      key={i}
+                      size={18}
+                      fill={i < Math.round(product.average_rating || 0) ? "#facc15" : "none"}
+                      stroke="#facc15"
                     />
-                    ))}
+                  ))}
                 </div>
-            </div>
+              </div>
 
+              <div className="product-divider"></div>
+
+              <div className="product-sold">
+                <TrendingUp size={18} />
+                <span>Đã bán: <strong>{product.total_sold || 0}</strong></span>
+              </div>
+            </div>
 
             <div className="product-price">
               <span className="current-price">
@@ -199,7 +269,6 @@ const ProductDetail = ({ product }) => {
               )}
             </div>
 
-            {/* Chọn Màu */}
             <div className="selector-group">
               <label className="selector-label">Màu sắc:</label>
               <div className="color-options">
@@ -216,7 +285,6 @@ const ProductDetail = ({ product }) => {
               </div>
             </div>
 
-            {/* Chọn Size */}
             <div className="selector-group">
               <label className="selector-label">Kích thước:</label>
               <div className="size-options">
@@ -232,7 +300,6 @@ const ProductDetail = ({ product }) => {
               </div>
             </div>
 
-            {/* Stock và Quantity */}
             <div className="stock-quantity-group">
               <div>
                 <span className="label">Tồn kho: </span>
@@ -253,7 +320,7 @@ const ProductDetail = ({ product }) => {
                   </button>
                   <input
                     type="number"
-                    className="qty-input"
+                    className="qty-input2"
                     value={quantity}
                     min="1"
                     max={currentVariant?.stock_quantity || 1}
@@ -274,7 +341,6 @@ const ProductDetail = ({ product }) => {
               </div>
             </div>
 
-            {/* Nút hành động */}
             <div className="action-buttons">
               <button className="btn btn-primary" onClick={handleBuyNow}>
                 Mua ngay
@@ -284,12 +350,58 @@ const ProductDetail = ({ product }) => {
               </button>
             </div>
 
-            {/* Mô tả sản phẩm */}
             <div className="product-description">
               <h3>Mô tả sản phẩm</h3>
               <p>{product.description}</p>
             </div>
           </div>
+        </div>
+
+        {/* 🔥 Reviews Section */}
+        <div className="reviews-section">
+          <h2 className="reviews-title">Đánh giá sản phẩm</h2>
+          
+          {loadingReviews ? (
+            <div className="reviews-loading">Đang tải đánh giá...</div>
+          ) : reviews.length === 0 ? (
+            <div className="reviews-empty">Chưa có đánh giá nào cho sản phẩm này</div>
+          ) : (
+            <div className="reviews-list">
+              {reviews.map((review) => (
+                <div key={review.id} className="review-item">
+                  <div className="review-header">
+                    <img
+                      src={review.avatar_img || userImage}
+                      alt={review.full_name}
+                      className="review-avatar"
+                      onError={(e) => {
+                        e.target.src = userImage;
+                      }}
+                    />
+                    <div className="review-user-info">
+                      <div className="review-name">{review.full_name || 'Người dùng'}</div>
+                      <div className="review-rating">
+                        {Array.from({ length: 5 }, (_, i) => (
+                          <Star
+                            key={i}
+                            size={14}
+                            fill={i < review.rating ? "#facc15" : "none"}
+                            stroke="#facc15"
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <div className="review-date">
+                      {new Date(review.review_date).toLocaleDateString('vi-VN')}
+                    </div>
+                  </div>
+                  <div className="review-comment">
+                    {review.comment || 'Không có bình luận'}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
