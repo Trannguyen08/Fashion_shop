@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useCartContext } from '../../context/CartContext';
 import { Star, TrendingUp } from "lucide-react";
 import { formatPrice } from '../../utils/formatUtils';
+import userImage from '../../assets/images/user.png';
+import axios from 'axios';
 import './ProductDetail.css';
 
 const ProductDetail = ({ product }) => {
@@ -12,6 +14,8 @@ const ProductDetail = ({ product }) => {
   const [selectedSize, setSelectedSize] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [mainImage, setMainImage] = useState(null);
+  const [reviews, setReviews] = useState([]);
+  const [loadingReviews, setLoadingReviews] = useState(false);
   
   const { addToCart } = useCartContext();
 
@@ -20,26 +24,45 @@ const ProductDetail = ({ product }) => {
       setMainImage(product.product_img);
 
       if (product.product_variants?.length > 0) {
-        // Khởi tạo màu và kích thước với variant đầu tiên
         setSelectedColor(product.product_variants[0].color);
         setSelectedSize(product.product_variants[0].size);
       }
+
+      // Fetch reviews
+      fetchReviews(product.id);
     }
   }, [product]);
 
-  // Lọc ra danh sách màu sắc duy nhất
+  const fetchReviews = async (productId) => {
+    setLoadingReviews(true);
+    try {
+      const response = await axios.get(`http://127.0.0.1:8000/review/all-reviews/${productId}/`,
+        {
+          headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('accessToken')
+          }
+        }
+      );
+      console.log('Fetched reviews:', response.data);
+      setReviews(response.data.data || []);
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
+      setReviews([]);
+    } finally {
+      setLoadingReviews(false);
+    }
+  };
+
   const colors = useMemo(() => {
     if (!product?.product_variants) return [];
     return [...new Set(product.product_variants.map(v => v.color))];
   }, [product]);
 
-  // Lọc ra danh sách kích thước duy nhất
   const sizes = useMemo(() => {
     if (!product?.product_variants) return [];
     return [...new Set(product.product_variants.map(v => v.size))];
   }, [product]);
 
-  // Tìm biến thể hiện tại dựa trên màu và size đã chọn
   const currentVariant = useMemo(() => {
     if (!product?.product_variants) return null;
     return product.product_variants.find(
@@ -47,20 +70,17 @@ const ProductDetail = ({ product }) => {
     );
   }, [product, selectedColor, selectedSize]);
 
-  // 🔥 Lấy danh sách ảnh hiển thị (ảnh sản phẩm chính + ảnh của variant hiện tại)
   const displayImages = useMemo(() => {
     const images = [
       { id: 'main', src: product?.product_img, alt: 'main' }
     ];
 
-    // Thêm ảnh phụ của sản phẩm
     if (product?.product_imgs?.length > 0) {
       product.product_imgs.forEach(img => {
         images.push({ id: `img_${img.id}`, src: img.PI_img, alt: 'product' });
       });
     }
 
-    // Thêm ảnh của variant hiện tại (nếu có)
     if (currentVariant?.variant_img) {
       images.push({
         id: `variant_${currentVariant.id}`,
@@ -73,7 +93,6 @@ const ProductDetail = ({ product }) => {
     return images;
   }, [product, currentVariant]);
 
-  // 🔥 Tự động chuyển sang ảnh variant khi chọn màu/size
   useEffect(() => {
     if (currentVariant?.variant_img) {
       setMainImage(currentVariant.variant_img);
@@ -175,7 +194,6 @@ const ProductDetail = ({ product }) => {
 
           {/* Nửa trái - Hình ảnh */}
           <div className="product-images-section">
-            {/* Tag NEW */}
             {product.is_new && (
               <div className="product-new-tag">
                 New
@@ -186,7 +204,6 @@ const ProductDetail = ({ product }) => {
               <img src={mainImage} alt={product.name} />
             </div>
 
-            {/* 🔥 Hiển thị ảnh từ displayImages */}
             <div className="thumbnail-images">
               {displayImages.map(img => (
                 <div key={img.id} className="thumbnail-wrapper">
@@ -213,7 +230,6 @@ const ProductDetail = ({ product }) => {
               )}
             </h1>
 
-            {/* 🔥 Rating và Số lượt bán trên cùng 1 dòng */}
             <div className="product-stats">
               <div className="product-rating">
                 <span className="rating-number">
@@ -253,7 +269,6 @@ const ProductDetail = ({ product }) => {
               )}
             </div>
 
-            {/* Chọn Màu */}
             <div className="selector-group">
               <label className="selector-label">Màu sắc:</label>
               <div className="color-options">
@@ -270,7 +285,6 @@ const ProductDetail = ({ product }) => {
               </div>
             </div>
 
-            {/* Chọn Size */}
             <div className="selector-group">
               <label className="selector-label">Kích thước:</label>
               <div className="size-options">
@@ -286,7 +300,6 @@ const ProductDetail = ({ product }) => {
               </div>
             </div>
 
-            {/* Stock và Quantity */}
             <div className="stock-quantity-group">
               <div>
                 <span className="label">Tồn kho: </span>
@@ -328,7 +341,6 @@ const ProductDetail = ({ product }) => {
               </div>
             </div>
 
-            {/* Nút hành động */}
             <div className="action-buttons">
               <button className="btn btn-primary" onClick={handleBuyNow}>
                 Mua ngay
@@ -338,12 +350,58 @@ const ProductDetail = ({ product }) => {
               </button>
             </div>
 
-            {/* Mô tả sản phẩm */}
             <div className="product-description">
               <h3>Mô tả sản phẩm</h3>
               <p>{product.description}</p>
             </div>
           </div>
+        </div>
+
+        {/* 🔥 Reviews Section */}
+        <div className="reviews-section">
+          <h2 className="reviews-title">Đánh giá sản phẩm</h2>
+          
+          {loadingReviews ? (
+            <div className="reviews-loading">Đang tải đánh giá...</div>
+          ) : reviews.length === 0 ? (
+            <div className="reviews-empty">Chưa có đánh giá nào cho sản phẩm này</div>
+          ) : (
+            <div className="reviews-list">
+              {reviews.map((review) => (
+                <div key={review.id} className="review-item">
+                  <div className="review-header">
+                    <img
+                      src={review.avatar_img || userImage}
+                      alt={review.full_name}
+                      className="review-avatar"
+                      onError={(e) => {
+                        e.target.src = userImage;
+                      }}
+                    />
+                    <div className="review-user-info">
+                      <div className="review-name">{review.full_name || 'Người dùng'}</div>
+                      <div className="review-rating">
+                        {Array.from({ length: 5 }, (_, i) => (
+                          <Star
+                            key={i}
+                            size={14}
+                            fill={i < review.rating ? "#facc15" : "none"}
+                            stroke="#facc15"
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <div className="review-date">
+                      {new Date(review.review_date).toLocaleDateString('vi-VN')}
+                    </div>
+                  </div>
+                  <div className="review-comment">
+                    {review.comment || 'Không có bình luận'}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

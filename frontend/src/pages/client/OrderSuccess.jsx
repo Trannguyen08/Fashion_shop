@@ -26,7 +26,7 @@ const OrderSuccess = ({ onContinueShopping }) => {
         }).format(amount || 0);
     };
 
-    const isValidOrder = !!orderDetails.orderCode;
+    const isValidOrder = !!orderDetails.orderId;
 
     if (!isValidOrder) {
         return (
@@ -43,6 +43,7 @@ const OrderSuccess = ({ onContinueShopping }) => {
     }
 
     const order = orderDetails;
+    console.log("Rendering Order Success for Order ID:", order.orderDate);
 
     return (
         <div className="container my-5">
@@ -51,7 +52,7 @@ const OrderSuccess = ({ onContinueShopping }) => {
             <div className="text-center mb-5">
                 <CheckCircle size={70} className="text-success mb-3" />
                 <h1 className="fw-bold text-success">Đặt hàng thành công!</h1>
-                <p className="text-muted fs-5">Mã đơn hàng: #{order.orderCode}</p>
+                <p className="text-muted fs-5">Mã đơn hàng: #{order.orderId}</p>
             </div>
 
             {/* ============== 3 BLOCKS ============== */}
@@ -67,7 +68,7 @@ const OrderSuccess = ({ onContinueShopping }) => {
 
                             <ul className="list-unstyled small">
                                 <li className="py-2 d-flex justify-content-between">
-                                    <span>Mã đơn:</span> <strong>#{order.orderCode}</strong>
+                                    <span>Mã đơn:</span> <strong>#{order.orderId}</strong>
                                 </li>
                                 <li className="py-2 d-flex justify-content-between">
                                     <span>Ngày đặt:</span> {order.orderDate}
@@ -76,12 +77,12 @@ const OrderSuccess = ({ onContinueShopping }) => {
                                     <span>Tạm tính:</span> {formatCurrency(order.subTotal)}
                                 </li>
                                 <li className="py-2 d-flex justify-content-between">
-                                    <span>Phí vận chuyển:</span> {formatCurrency(order.shippingCost)}
+                                    <span>Phí vận chuyển:</span> {formatCurrency(order.shippingFee)}
                                 </li>
                                 <li className="py-2 d-flex justify-content-between">
                                     <strong>Tổng thanh toán:</strong>
                                     <span className="text-danger fw-bold">
-                                        {formatCurrency(order.finalTotal)}
+                                        {formatCurrency(order.subTotal + order.shippingFee)}
                                     </span>
                                 </li>
                                 <li className="py-2 d-flex justify-content-between">
@@ -144,30 +145,42 @@ const OrderSuccess = ({ onContinueShopping }) => {
                             </p>
 
                             <p>
-                                <strong>Phương thức:</strong> {order.shippingMethodLabel}
+                                <strong>Phương thức:</strong> {order.shippingMethod} {/* Đã gửi chuỗi "Giao hàng nhanh" */}
                             </p>
 
                             <p>
-                                <strong>Dự kiến giao:</strong> {order.estimatedDelivery}
+                                <strong>Dự kiến giao:</strong> {order.estimatedDelivery} {/* Đã gửi chuỗi ngày dự kiến */}
                             </p>
 
                             <p className="d-flex align-items-center">
                                 <User size={18} className="me-2 text-primary" />
-                                <strong className="me-2">Người nhận:</strong> {order.recipientName}
+                                <strong className="me-2">Người nhận:</strong> {order.recipientName} {/* Đã gửi recipientName */}
                             </p>
 
                             <p className="d-flex align-items-center">
                                 <Phone size={18} className="me-2 text-primary" />
-                                <strong className="me-2">SĐT:</strong> {order.recipientPhone}
+                                <strong className="me-2">SĐT:</strong> {order.recipientPhone} {/* Đã gửi recipientPhone */}
                             </p>
 
                             <p className="d-flex align-items-start">
                                 <MapPin size={18} className="me-2 mt-1 text-primary" />
-                                <span><strong>Địa chỉ:</strong> {order.addressDetail}</span>
+                                <span>
+                                    <strong>Địa chỉ:</strong> {order.addressFullText} {/* ĐÃ SỬA: Dùng tên biến mới */}
+                                </span>
                             </p>
+                            {/* THÊM: Ghi chú nếu có */}
+                            {order.notes && order.notes.trim() !== '' && (
+                                <p className="d-flex align-items-start border-top pt-2 mt-2">
+                                    <CalendarDays size={18} className="me-2 mt-1 text-muted" />
+                                    <span className="small text-muted">
+                                        <strong>Ghi chú:</strong> {order.notes}
+                                    </span>
+                                </p>
+                            )}
                         </div>
                     </div>
                 </div>
+
             </div>
 
             {/* BUTTON */}

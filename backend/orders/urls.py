@@ -1,6 +1,8 @@
 from django.urls import path
-from .views import create_order
+from orders import views
 
 urlpatterns = [
-    path('add/', create_order, name='add-order'),
+    path('create-order/', views.create_order),
+    path('all-orders/', views.get_user_order),
+    path('cancel-order/<int:order_id>/', views.cancel_order),
 ]

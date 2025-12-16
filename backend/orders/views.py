@@ -1,9 +1,10 @@
 from django.core.cache import cache
 from django.db import transaction
-from django.db.models import F
+from django.db.models import F, Sum
 from django.http import JsonResponse
-from rest_framework.decorators import api_view
-from accounts.models import Account
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from customers.models import CustomerAddress
 from products.models import ProductVariant, Product
 from .models import Order
 from .serializers import OrderSerializer
@@ -11,80 +12,137 @@ from .serializers import OrderSerializer
 
 def delete_order_cache():
     cache.delete("all_orders")
+    cache.delete("all_products")
     for key in cache.keys("all_orders_*"):
         cache.delete(key)
 
 
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def create_order(request):
     try:
         with transaction.atomic():
-
             data = request.data
             items = data.get("items", [])
+            variant_ids = [item["product_variant"] for item in items]
 
-            if not items:
-                return JsonResponse({"error": "Giỏ hàng trống"}, status=400)
+            locked_variants = {
+                variant.id: variant
+                for variant in ProductVariant.objects.select_for_update().filter(id__in=variant_ids)
+            }
 
-            locked_variants = {}
-            locked_products = {}
+            if len(locked_variants) != len(variant_ids):
+                return JsonResponse({"error": "Một hoặc nhiều biến thể sản phẩm không tồn tại"}, status=404)
 
-            # 1. LOCK tất cả ProductVariant & Product
+            product_ids = set()
+
             for item in items:
-                variant_id = item["variant"]
+                variant_id = item["product_variant"]
                 quantity = item["quantity"]
+                variant = locked_variants[variant_id]
 
-                # Lock variant trước
-                variant = ProductVariant.objects.select_for_update().get(id=variant_id)
-                locked_variants[variant_id] = variant
+                product_ids.add(variant.product_id)
 
-                # Lock product cha
-                product = Product.objects.select_for_update().get(id=variant.product_id)
-                locked_products[product.id] = product
-
-                # Kiểm tra stock variant
-                if variant.stock < quantity:
+                if variant.stock_quantity < quantity:
+                    product_name = Product.objects.get(id=variant.product_id).name
                     return JsonResponse({
-                        "error": f"Biến thể '{variant.name}' của sản phẩm '{product.name}' "
-                                 f"không đủ hàng. Còn lại: {variant.stock}, bạn cần: {quantity}"
+                        "error": f"Biến thể '{variant.name}' của sản phẩm '{product_name}' "
+                                 f"không đủ hàng. Còn lại: {variant.stock_quantity}, bạn cần: {quantity}"
                     }, status=400)
 
-            # 2. Trừ tồn kho của từng Variant trước
+            locked_products = {
+                product.id: product
+                for product in Product.objects.select_for_update().filter(id__in=product_ids)
+            }
+
+            # update variant stock
             for item in items:
-                variant = locked_variants[item["variant"]]
+                variant_id = item["product_variant"]
                 qty = item["quantity"]
+                ProductVariant.objects.filter(id=variant_id).update(stock_quantity=F("stock_quantity") - qty)
 
-                variant.stock = F("stock") - qty
-                variant.save()
-
-            # 3. Cập nhật lại stock của Product ( = tổng stock variants )
-            for product_id, product in locked_products.items():
-                total_variant_stock = ProductVariant.objects.filter(
+            # update total stock
+            for product_id in product_ids:
+                total_variant_stock = ProductVariant.objects.select_for_update().filter(
                     product_id=product_id
-                ).aggregate(total=F("stock"))  # tổng tất cả variants
+                ).aggregate(total_sum=Sum("stock_quantity"))
 
-                product.stock = total_variant_stock
-                product.save()
+                new_stock = total_variant_stock.get('total_sum') or 0
+                Product.objects.filter(id=product_id).update(stock_quantity=new_stock)
 
-            # 4. Tạo Order
+            # create order
+            address = CustomerAddress.objects.get(id=data.get("address"))
             serializer = OrderSerializer(data=data)
             if serializer.is_valid():
-                order = serializer.save()
-
+                order = serializer.save(customer=request.user, address=address)
                 delete_order_cache()
 
                 return JsonResponse({
+                    "success": True,  # Thêm success: True
                     "message": "Tạo đơn hàng thành công",
                     "order_id": order.id
                 }, status=200)
             else:
-                return JsonResponse(serializer.errors, status=400)
-
-    except ProductVariant.DoesNotExist:
-        return JsonResponse({"error": "Biến thể sản phẩm không tồn tại"}, status=404)
+                print(serializer.errors)
+                return JsonResponse({"success": False, "errors": serializer.errors}, status=400)
 
     except Exception as e:
-        return JsonResponse({"error": str(e)}, status=500)
+        print(f"Lỗi tạo đơn hàng: {str(e)}")
+        return JsonResponse({"success": False, "error": "Đã xảy ra lỗi hệ thống khi tạo đơn hàng."}, status=500)
+
+
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def cancel_order(request, order_id):
+    try:
+        with transaction.atomic():
+            user = request.user
+            order = Order.objects.filter(
+                id=order_id,
+                customer=user
+            ).first()
+
+            if order is None:
+                print(f"Not found order {order}")
+                return JsonResponse({
+                    "success": False,
+                    "message": f"Đơn hàng {order_id} không được tìm thấy"
+                }, status=404)
+
+            product_ids = set()
+
+            # update stock variant
+            for item in order.items.all():
+                variant = item.product_variant
+                qty = item.quantity
+                ProductVariant.objects.filter(id=variant.id).update(
+                    stock_quantity=F("stock_quantity") + qty
+                )
+                product_ids.add(variant.product_id)
+
+            # update total stock
+            for product_id in product_ids:
+                total_variant_stock = ProductVariant.objects.filter(
+                    product_id=product_id
+                ).aggregate(total_sum=Sum("stock_quantity"))
+
+                new_stock = total_variant_stock.get("total_sum") or 0
+                Product.objects.filter(id=product_id).update(stock_quantity=new_stock)
+
+            order.ship_status = "Cancelled"
+            order.save()
+
+            delete_order_cache()
+
+            return JsonResponse({
+                "success": True,
+                "message": f"Đơn hàng {order_id} đã được hủy thành công"
+            }, status=200)
+
+    except Exception as e:
+        print(f"Lỗi hủy đơn hàng: {str(e)}")
+        return JsonResponse({"success": False, "error": "Đã xảy ra lỗi hệ thống khi hủy đơn hàng."}, status=500)
+
 
 @api_view(['PUT'])
 def update_order(request, order_id):
@@ -107,46 +165,33 @@ def update_order(request, order_id):
 
 
 @api_view(['GET'])
-def get_all_order(request):
+@permission_classes([IsAuthenticated])
+def get_user_order(request):
     try:
-        KEY = "all_orders"
+        KEY = f"all_orders_{request.user.id}"
         order = cache.get(KEY)
 
         if order is None:
-            order_qs = Order.objects.all()
-            order = OrderSerializer(order_qs).data
+            user = request.user
+            order_qs = Order.objects.filter(
+                customer=user
+            ).order_by('-order_date')
+            order = OrderSerializer(order_qs, many=True).data
             cache.set(KEY, order, timeout=86400)
 
         return JsonResponse({
-            "orders": order
+            "success": True,
+            "data": order
         }, status=200)
 
     except Exception as e:
+        print(str(e))
         return JsonResponse({
             "error": str(e)
         }, status=500)
 
 
-@api_view(['GET'])
-def get_all_order_by_id(request, account_id):
-    try:
-        KEY = f"all_orders_{account_id}"
-        order = cache.get(KEY)
 
-        if order is None:
-            account = Account.objects.filter(id=account_id)
-            order_qs = Order.objects.filter(customer=account)
-            order = OrderSerializer(order_qs).data
-            cache.set(KEY, order, timeout=86400)
 
-        return JsonResponse({
-            "id" : account_id,
-            "orders": order
-        }, status=200)
-
-    except Exception as e:
-        return JsonResponse({
-            "error": str(e)
-        }, status=500)
 
 

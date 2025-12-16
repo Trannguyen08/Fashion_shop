@@ -7,16 +7,15 @@ const CartSummary = ({
     totalAmount = 0, 
     itemCount = 0, 
     onCheckout,
-    isCheckout = false // ✨ Prop MỚI: Dùng để xác định đang ở trang Checkout
+    isCheckout = false,
+    shippingFee = 0
 }) => {
     // Safety check
     const validItems = Array.isArray(items) ? items : [];
     const total = typeof totalAmount === 'number' ? totalAmount : 0;
     const count = typeof itemCount === 'number' ? itemCount : 0;
 
-    // Tính toán chi phí vận chuyển mô phỏng (cần lấy từ state Checkout nếu có)
-    const shippingCost = isCheckout ? 15000 : 0; // Giả sử Checkout có chi phí vận chuyển 15k
-    const finalTotal = total + shippingCost;
+    const finalTotal = total + shippingFee;
 
     return (
         <div className="cart-summary">
@@ -80,7 +79,7 @@ const CartSummary = ({
                             <span className="summary-label">Vận chuyển:</span>
                             {/* Chỉ hiển thị chi phí vận chuyển cố định nếu ở Checkout */}
                             <span className="summary-value summary-shipping">
-                                {isCheckout ? shippingCost.toLocaleString('vi-VN') + '₫' : 'Tính sau'} 
+                                {isCheckout ? shippingFee.toLocaleString('vi-VN') + '₫' : 'Tính sau'} 
                             </span>
                         </div>
                         <div className="summary-row">

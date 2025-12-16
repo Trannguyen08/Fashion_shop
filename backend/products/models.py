@@ -1,6 +1,5 @@
 from django.db import models
 from django.db.models import Avg
-from accounts.models import Account
 from cloudinary.models import CloudinaryField
 from categories.models import Category
 
@@ -80,24 +79,3 @@ class ProductImage(models.Model):
         return f"{self.product.name} Image"
 
 
-#model review
-class Review(models.Model):
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews')
-    account = models.ForeignKey(Account, on_delete=models.CASCADE, related_name='reviews')
-    rating = models.IntegerField(default=0)
-    comment = models.TextField(blank=True)
-    review_date = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        indexes = [
-            models.Index(fields=["product"]),  # auto but ok
-            models.Index(fields=["account"]),
-            models.Index(fields=["product", "-review_date"]),  # BEST
-        ]
-
-    def __str__(self):
-        return f"{self.account.username} - {self.product.name} ({self.rating}★)"
-
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        self.product.update_average_rating()

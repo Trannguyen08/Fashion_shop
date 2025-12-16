@@ -1,145 +1,167 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
-import {jwtDecode} from "jwt-decode";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import axios from "axios";
+import { jwtDecode } from "jwt-decode";
+import { useNavigate } from "react-router-dom";
 
 const AuthContext = createContext(null);
-const REFRESH_URL = "http://127.0.0.1:8000/account/token/refresh/"; 
-
 export const useAuth = () => useContext(AuthContext);
 
-// Hàm thiết lập Axios Interceptor
-const setupAxiosInterceptors = (authContext) => {
-    // 1. Thêm Access Token vào mọi request đi
-    axios.interceptors.request.use(
-        config => {
-            const token = authContext.accessToken;
-            if (token) {
-                config.headers.Authorization = `Bearer ${token}`;
-            }
-            return config;
-        },
-        error => Promise.reject(error)
-    );
-
-    // 2. Xử lý lỗi 401 và làm mới Token
-    axios.interceptors.response.use(
-        response => response,
-        async (error) => {
-            const originalRequest = error.config;
-            
-            // Nếu lỗi là 401 và đây không phải request làm mới token
-            if (error.response.status === 401 && !originalRequest._retry) {
-                originalRequest._retry = true; // Đánh dấu đã thử lại một lần
-
-                try {
-                    const newAccessToken = await authContext.refreshAccessToken();
-                    if (newAccessToken) {
-                        // Thử lại request ban đầu với token mới
-                        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-                        return axios(originalRequest);
-                    }
-                } catch (refreshError) {
-                    // Refresh Token thất bại -> Đăng xuất
-                    authContext.logout();
-                    return Promise.reject(refreshError);
-                }
-            }
-
-            return Promise.reject(error);
-        }
-    );
-};
-
+const LOGIN_URL = "http://127.0.0.1:8000/account/login/";
+const REFRESH_URL = "http://127.0.0.1:8000/account/token/refresh/";
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
-    const [accessToken, setAccessToken] = useState(localStorage.getItem('accessToken'));
+    const [user, setUser] = useState(() => {
+        return JSON.parse(localStorage.getItem("user")) || null;
+    });
+
+    const [accessToken, setAccessToken] = useState(() =>
+        localStorage.getItem("accessToken")
+    );
+
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const refreshSubscribers = [];
+
     const navigate = useNavigate();
 
-    // Dùng useCallback để hàm này không tạo lại vô ích
+    // ============================
+    //       LOGOUT
+    // ============================
+    const logout = useCallback(() => {
+        setUser(null);
+        setAccessToken(null);
+
+        localStorage.removeItem("user");
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+
+        navigate("/login");
+    }, [navigate]);
+
+    // ============================
+    //   TOKEN REFRESH HANDLING
+    // ============================
+
+    const onRefreshed = (newToken) => {
+        refreshSubscribers.forEach((cb) => cb(newToken));
+        refreshSubscribers.length = 0; // clear queue
+    };
+
+    const addRefreshSubscriber = (callback) => {
+        refreshSubscribers.push(callback);
+    };
+
     const refreshAccessToken = useCallback(async () => {
-        const refreshToken = localStorage.getItem('refreshToken');
-        if (!refreshToken) {
-            // Không có Refresh Token -> Yêu cầu đăng nhập lại
-            logout();
-            throw new Error("No refresh token available");
+        if (isRefreshing) {
+            // Nếu đang refresh → trả promise chờ token mới
+            return new Promise((resolve) => {
+                addRefreshSubscriber(resolve);
+            });
         }
 
+        setIsRefreshing(true);
+
         try {
-            const response = await axios.post(REFRESH_URL, { refresh_token: refreshToken });
-            const newAccessToken = response.data.access_token;
-            
-            // Cập nhật và lưu Access Token mới
-            setAccessToken(newAccessToken);
-            localStorage.setItem('accessToken', newAccessToken);
-            
-            return newAccessToken;
+            const refreshToken = localStorage.getItem("refreshToken");
+
+            if (!refreshToken) {
+                logout();
+                throw new Error("NO_REFRESH_TOKEN");
+            }
+
+            const response = await axios.post(REFRESH_URL, 
+                {
+                    refresh_token: refreshToken,
+                }
+            );
+
+            const newToken = response.data.access_token;
+
+            // Cập nhật token
+            setAccessToken(newToken);
+            localStorage.setItem("accessToken", newToken);
+
+            setIsRefreshing(false);
+            onRefreshed(newToken);
+
+            return newToken;
         } catch (error) {
-            console.error("Lỗi làm mới token:", error);
-            // Refresh Token không hợp lệ/hết hạn -> Đăng xuất
+            setIsRefreshing(false);
             logout();
             throw error;
         }
-    }, [navigate]);
+    }, [isRefreshing, logout]);
 
-    const logout = useCallback(() => {
-        setAccessToken(null);
-        setUser(null);
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('user');
-        navigate('/login');
-    }, [navigate]);
-
-    // Khởi tạo trạng thái ban đầu và Interceptor
-    useEffect(() => {
-        // Lấy thông tin user đã lưu
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-            setUser(JSON.parse(storedUser));
-        }
-        
-        // Thiết lập Interceptor sau khi Context được tạo
-        setupAxiosInterceptors({ accessToken, refreshAccessToken, logout });
-
-    }, [accessToken, refreshAccessToken, logout]); // Re-run khi token/hàm thay đổi
+    // ============================
+    //       AXIOS INTERCEPTORS
+    // ============================
 
     useEffect(() => {
-        if (!accessToken) return;
+        const requestInterceptor = axios.interceptors.request.use(
+            (config) => {
+                // KIỂM TRA: Nếu request là đến endpoint đăng nhập, KHÔNG thêm token.
+                const token = localStorage.getItem("accessToken");
+                const isLoginRequest = config.url === LOGIN_URL; 
 
-        // Giải mã token
-        const { exp } = jwtDecode(accessToken);
-        const expiresInMs = exp * 1000 - Date.now();
+                if (token && !isLoginRequest) { 
+                    config.headers.Authorization = `Bearer ${token}`;
+                }
+                return config;
+            },
+        );
 
-        // Nếu còn < 2 phút thì refresh luôn
-        const refreshBefore = expiresInMs - 2 * 60 * 1000;
+        const responseInterceptor = axios.interceptors.response.use(
+            (response) => response,
+            async (error) => {
+                const originalRequest = error.config;
 
-        if (refreshBefore > 0) {
-            const timer = setTimeout(() => {
-                refreshAccessToken();
-            }, refreshBefore);
+                // Nếu lỗi không phải 401 -> bỏ qua
+                if (error.response?.status !== 401) {
+                    return Promise.reject(error);
+                }
 
-            return () => clearTimeout(timer);
-        } else {
-            // Token gần hết hạn -> refresh ngay
-            refreshAccessToken();
-        }
+                // Nếu đã retry rồi thì không retry nữa
+                if (originalRequest._retry) {
+                    logout();
+                    return Promise.reject(error);
+                }
 
-    }, [accessToken]);
+                originalRequest._retry = true;
 
+                try {
+                    const newToken = await refreshAccessToken();
 
-    // Hàm login sẽ được gọi từ Login.js
+                    originalRequest.headers.Authorization = `Bearer ${newToken}`;
+                    return axios(originalRequest); // Retry request
+                } catch (err) {
+                    return Promise.reject(err);
+                }
+            }
+        );
+
+        return () => {
+            axios.interceptors.request.eject(requestInterceptor);
+            axios.interceptors.response.eject(responseInterceptor);
+        };
+    }, [refreshAccessToken, logout]);
+
+    // ============================
+    //            LOGIN
+    // ============================
+
     const login = (data) => {
         const { access_token, refresh_token, user: userData } = data;
-        
+
         localStorage.setItem("accessToken", access_token);
         localStorage.setItem("refreshToken", refresh_token);
         localStorage.setItem("user", JSON.stringify(userData));
-        
+
         setAccessToken(access_token);
         setUser(userData);
     };
+
+    // ============================
+    //      CONTEXT VALUE
+    // ============================
 
     const contextValue = {
         user,
@@ -147,7 +169,6 @@ export const AuthProvider = ({ children }) => {
         isAuthenticated: !!user,
         login,
         logout,
-        refreshAccessToken
     };
 
     return (

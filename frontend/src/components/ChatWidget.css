@@ -1,0 +1,96 @@
+/* ChatWidget.css */
+
+/* Chat Icon Hover Effect */
+.chat-icon:hover {
+  transform: scale(1.1) !important;
+  box-shadow: 0 6px 20px rgba(231, 4, 99, 0.6) !important;
+}
+
+/* Chat Window Animation */
+.chat-window {
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Custom Scrollbar for Messages */
+.chat-messages::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover {
+  background: #999;
+}
+
+/* Quick Reply Button Hover */
+.btn-outline-secondary:hover {
+  background: #e70463 !important;
+  color: white !important;
+  border-color: #e70463 !important;
+}
+
+/* Send Button Hover */
+.btn-primary:hover {
+  background: #c70355 !important;
+  transform: scale(1.05);
+}
+
+/* Chat Header Button Hover */
+.chat-header .btn-link:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .chat-window {
+    width: calc(100vw - 40px) !important;
+    height: calc(100vh - 100px) !important;
+    bottom: 20px !important;
+    right: 20px !important;
+  }
+
+  .chat-icon {
+    bottom: 20px !important;
+    right: 20px !important;
+  }
+}
+
+/* Message Animation */
+.chat-message {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Input Focus Effect */
+.chat-window .form-control:focus {
+  border-color: #e70463 !important;
+  box-shadow: 0 0 0 0.2rem rgba(231, 4, 99, 0.25) !important;
+}

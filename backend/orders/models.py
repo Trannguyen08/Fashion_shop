@@ -1,3 +1,5 @@
+from contextlib import nullcontext
+
 from django.db import models
 from accounts.models import Account
 from customers.models import CustomerAddress
@@ -17,10 +19,11 @@ class Order(models.Model):
     order_date = models.DateTimeField(auto_now_add=True)
     ship_method = models.CharField(max_length=50)
     payment_method = models.CharField(max_length=50)
-    note = models.TextField()
+    note = models.TextField(default=nullcontext)
     ship_status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending')
     payment_status = models.CharField(max_length=20, default='Pending')
     total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    is_rating = models.BooleanField(default=False)
 
     def __str__(self):
         return f"Order #{self.id} - {self.customer}"

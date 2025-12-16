@@ -50,11 +50,24 @@ INSTALLED_APPS = [
     'orders',
     'payments',
     'customers',
-    'shipping',
     'rest_framework_simplejwt',
     'cloudinary_storage',
     'cloudinary',
+    'channels',
+    'chat',
+    'reviews'
 ]
+
+ASGI_APPLICATION = 'backend.asgi.application'
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [('127.0.0.1', 6379)],
+        },
+    },
+}
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (

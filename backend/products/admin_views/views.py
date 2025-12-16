@@ -7,7 +7,7 @@ from ..models import Product, Category, ProductVariant, ProductImage
 from ..serializers import ProductSerializer
 import json
 from decouple import config
-from utils.delete_product_cache import delete_cache
+from utils.delete_cache import delete_product_cache
 
 
 @api_view(['GET'])
@@ -109,7 +109,7 @@ def add_product(request):
         product.save()
 
         serializer = ProductSerializer(product)
-        delete_cache()
+        delete_product_cache()
 
         return JsonResponse({
             "message": "Thêm sản phẩm thành công",
@@ -212,7 +212,7 @@ def update_product(request, product_id):
         product.save()
 
         serializer = ProductSerializer(product)
-        delete_cache()
+        delete_product_cache()
 
         return JsonResponse({
             "message": "Cập nhật sản phẩm thành công!",
@@ -240,7 +240,7 @@ def update_status(request, product_id):
         product.status = status_value
         product.save()
 
-        delete_cache()
+        delete_product_cache()
 
         return JsonResponse({
             "message": "Cập nhật trạng thái thành công!",

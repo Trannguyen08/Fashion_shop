@@ -6,7 +6,9 @@ import tops from "../../assets/images/tops.webp";
 import bottoms from "../../assets/images/bottoms.webp";
 import caps from "../../assets/images/caps.jpg";
 import bags from "../../assets/images/bags.jpg";
+import ChatWidget from "../../components/ChatWidget";
 import { Link } from "react-router-dom";
+import { FaShippingFast, FaUndo, FaShieldAlt, FaHeadset } from "react-icons/fa";
 import "./Home.css";
 
 const Home = () => {
@@ -14,6 +16,13 @@ const Home = () => {
   const [newArrivals, setNewArrivals] = useState([]);
   const [testimonials, setTestimonials] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // Flash Sale Countdown State
+  const [timeLeft, setTimeLeft] = useState({
+    hours: 2,
+    minutes: 45,
+    seconds: 30
+  });
 
   const fetchHomeProducts = async () => {
     try {
@@ -28,6 +37,30 @@ const Home = () => {
       setLoading(false);
     }
   };
+
+  // Countdown Timer Effect
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft(prevTime => {
+        let { hours, minutes, seconds } = prevTime;
+        
+        if (seconds > 0) {
+          seconds--;
+        } else if (minutes > 0) {
+          minutes--;
+          seconds = 59;
+        } else if (hours > 0) {
+          hours--;
+          minutes = 59;
+          seconds = 59;
+        }
+        
+        return { hours, minutes, seconds };
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     fetchHomeProducts();
@@ -49,6 +82,51 @@ const Home = () => {
         </div>
       </div>
 
+      {/* ===== FLASH SALE SECTION ===== */}
+      <div className="flash-sale-section">
+        <div className="flash-sale-header">
+          <div className="flash-sale-title-wrapper">
+            <span className="flash-icon">⚡</span>
+            <h2 className="flash-sale-title">Flash Sale - Giảm đến 50%</h2>
+          </div>
+          <div className="countdown-timer">
+            <span className="timer-label">Kết thúc sau: </span>
+            <div className="timer-boxes">
+              <div className="timer-box">
+                <span className="timer-number">{String(timeLeft.hours).padStart(2, '0')}</span>
+                <span className="timer-text">Giờ</span>
+              </div>
+              <span className="timer-separator">:</span>
+              <div className="timer-box">
+                <span className="timer-number">{String(timeLeft.minutes).padStart(2, '0')}</span>
+                <span className="timer-text">Phút</span>
+              </div>
+              <span className="timer-separator">:</span>
+              <div className="timer-box">
+                <span className="timer-number">{String(timeLeft.seconds).padStart(2, '0')}</span>
+                <span className="timer-text">Giây</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {loading ? (
+          <p className="loading-text">Đang tải sản phẩm flash sale...</p>
+        ) : (
+          <div className="flash-sale-products">
+            {featuredProducts.slice(0, 4).map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        )}
+        
+        <div className="flash-sale-footer">
+          <Link to="/flash-sale">
+            <button className="view-all-flash-btn">Xem tất cả Flash Sale →</button>
+          </Link>
+        </div>
+      </div>
+
       {/* Categories */}
       <div className="promotions-section">
         <h2 className="section-title">Shop by Categories</h2>
@@ -57,6 +135,58 @@ const Home = () => {
           <CategoryItem image={bottoms} title="BOTTOM" link="/category/bottom" />
           <CategoryItem image={caps} title="CAP" link="/category/cap" />
           <CategoryItem image={bags} title="BAG" link="/category/bag" />
+        </div>
+      </div>
+
+      {/* ===== WHY CHOOSE US SECTION ===== */}
+      <div className="why-choose-us-section">
+        <h2 className="section-title">Vì sao chọn chúng tôi?</h2>
+        <p className="section-subtitle">Cam kết mang đến trải nghiệm mua sắm tốt nhất</p>
+        
+        <div className="usp-grid">
+          <div className="usp-item">
+            <div className="usp-icon-wrapper">
+              <FaShippingFast className="usp-icon" />
+            </div>
+            <h4 className="usp-title">Giao hàng nhanh chóng</h4>
+            <p className="usp-description">
+              Giao hàng toàn quốc trong 2-5 ngày. 
+              Miễn phí ship cho đơn hàng từ 500.000đ
+            </p>
+          </div>
+
+          <div className="usp-item">
+            <div className="usp-icon-wrapper">
+              <FaUndo className="usp-icon" />
+            </div>
+            <h4 className="usp-title">Đổi trả dễ dàng</h4>
+            <p className="usp-description">
+              Chính sách đổi trả trong 7 ngày. 
+              Hoàn tiền 100% nếu sản phẩm lỗi
+            </p>
+          </div>
+
+          <div className="usp-item">
+            <div className="usp-icon-wrapper">
+              <FaShieldAlt className="usp-icon" />
+            </div>
+            <h4 className="usp-title">Hàng chính hãng 100%</h4>
+            <p className="usp-description">
+              Cam kết sản phẩm chính hãng. 
+              Bảo hành đầy đủ theo quy định
+            </p>
+          </div>
+
+          <div className="usp-item">
+            <div className="usp-icon-wrapper">
+              <FaHeadset className="usp-icon" />
+            </div>
+            <h4 className="usp-title">Hỗ trợ 24/7</h4>
+            <p className="usp-description">
+              Đội ngũ tư vấn nhiệt tình. 
+              Sẵn sàng hỗ trợ mọi lúc mọi nơi
+            </p>
+          </div>
         </div>
       </div>
 
@@ -88,7 +218,7 @@ const Home = () => {
         )}
       </div>
 
-      {/* ✅ Testimonials component */}
+      {/* Testimonials */}
       <Testimonials testimonials={testimonials} />
 
       {/* Newsletter */}
@@ -104,6 +234,8 @@ const Home = () => {
           </div>
         </div>
       </div>
+
+      <ChatWidget />
 
     </div>
   );

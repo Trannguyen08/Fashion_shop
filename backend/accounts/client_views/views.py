@@ -1,7 +1,7 @@
 from django.core.cache import cache
 from django.http import JsonResponse
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.db.models import Q
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
@@ -131,6 +131,7 @@ def refresh_token_view(request):
         return JsonResponse({'error': 'User không tồn tại'}, status=404)
 
 
+
 @api_view(['GET'])
 def get_user_info(request, account_id):
     try:
@@ -177,14 +178,15 @@ def update_user_info(request, account_id):
 
 @api_view(['PUT'])
 @permission_classes([AllowAny])
-def change_password(request, account_id):
+def change_password(request):
     try:
         data = request.data
+        user = request.user
 
         current_password = data.get("current_password")
         new_password = data.get("new_password")
 
-        account = Account.objects.get(id=account_id)
+        account = Account.objects.get(id=user.id)
 
         if not account.check_password(current_password):
             return JsonResponse({"error": "Mật khẩu hiện tại không chính xác!"}, status=400)

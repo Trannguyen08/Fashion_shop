@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import user from "../assets/images/user.png";
 import { Star, ChevronLeft, ChevronRight } from "lucide-react";
 
 const Testimonials = ({ testimonials }) => {
@@ -46,6 +47,7 @@ const Testimonials = ({ testimonials }) => {
   }
 
   const current = testimonials[currentIndex];
+  const avatarImg = current.avatar_img || user;
 
   return (
     <div className="promotions-section">
@@ -63,7 +65,7 @@ const Testimonials = ({ testimonials }) => {
 
           <div className="testimonial-card">
             <div className="testimonial-avatar">
-              <img src={current.avatar_img} alt={current.full_name} />
+              <img src={avatarImg} alt={current.full_name} />
             </div>
             <h4 className="testimonial-name">{current.full_name}</h4>
             <div className="testimonial-rating">{renderStars(current.rating)}</div>
