@@ -145,7 +145,7 @@ const Categories = () => {
         
         <button
           className="btn btn-primary btn-sm w-auto py-2"
-          style={{maxWidth : '200px'}}
+          style={{maxWidth : '220px'}}
           onClick={() => handleOpenFormModal(null)}
         >
           <PlusCircle size={18} className="me-1" /> Thêm Danh Mục

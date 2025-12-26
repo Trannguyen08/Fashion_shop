@@ -16,7 +16,7 @@ import Cart from '../pages/client/Cart';
 import OrderSuccess from '../pages/client/OrderSuccess';
 
 // ADMIN IMPORTS
-import AdminLayout from '../layouts/AdminLayout'; // Layout Admin
+import AdminLayout from '../layouts/AdminLayout'; 
 import Dashboard from '../pages/admin/Dashboard';
 import Customers from '../pages/admin/Customers';
 import Categories from '../pages/admin/Categories';
@@ -24,8 +24,11 @@ import Products from '../pages/admin/Products';
 import Orders from '../pages/admin/Orders';
 import Vouchers from '../pages/admin/Vouchers';
 import Reviews from '../pages/admin/Reviews';
-import Shipping from '../pages/admin/Shipping';
 import Transactions from '../pages/admin/Transactions';
+import UserDetail from '../pages/admin/UserDetail';
+import ProtectedRoute from './ProtectedRoute';
+import ForgotPassword from '../pages/login/ForgotPassword';
+import AdminChat from '../pages/admin/AdminChat';
 
 const ProductDetailPage = () => {
   const location = useLocation();
@@ -54,18 +57,21 @@ export default function RouteConfig() {
 
       <Route path="/register" element={<Register />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
 
-      <Route path="/admin" element={<AdminLayout />}>
-        <Route index element={<Dashboard />} /> 
-        <Route path="customers" element={<Customers />} />
-        <Route path="categories" element={<Categories />} />
-        <Route path="products" element={<Products />} />
-        <Route path="orders" element={<Orders />} />
-        <Route path="vouchers" element={<Vouchers />} />
-        <Route path="reviews" element={<Reviews />} />
-        <Route path="shipping" element={<Shipping />} />
-        <Route path="transactions" element={<Transactions />} />
-        <Route path="*" element={<h1>404 - Admin Page Not Found</h1>} />
+      <Route element={<ProtectedRoute />}>
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<Dashboard />} /> 
+          <Route path="customers" element={<Customers />} />
+          <Route path="categories" element={<Categories />} />
+          <Route path="products" element={<Products />} />
+          <Route path="orders" element={<Orders />} />
+          <Route path="vouchers" element={<Vouchers />} />
+          <Route path="reviews" element={<Reviews />} />
+          <Route path="transactions" element={<Transactions />} />
+          <Route path="support" element={<AdminChat />} />
+          <Route path="*" element={<h1>404 - Admin Page Not Found</h1>} />
+        </Route>
       </Route>
 
       <Route path="*" element={<h1>404 - Not Found</h1>} />

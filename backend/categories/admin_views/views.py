@@ -2,14 +2,13 @@ from django.core.cache import cache
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAdminUser
 from categories.models import Category
 from categories.serializers import CategorySerializer
 from utils.delete_cache import delete_product_cache
 
-@csrf_exempt
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([IsAdminUser])
 def get_all_category(request):
     CACHE_KEY = "all_categories"
     cached_data = cache.get(CACHE_KEY)
@@ -25,9 +24,8 @@ def get_all_category(request):
     return JsonResponse({"categories": data}, status=200)
 
 
-@csrf_exempt
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([IsAdminUser])
 def add_category(request):
     try:
         data = request.data
@@ -50,9 +48,9 @@ def add_category(request):
     except Exception as e:
         return JsonResponse({"error": str(e)},status=500)
 
-@csrf_exempt
+
 @api_view(['PUT'])
-@permission_classes([AllowAny])
+@permission_classes([IsAdminUser])
 def update_category(request, category_id):
     try:
         data = request.data
@@ -79,9 +77,8 @@ def update_category(request, category_id):
         return JsonResponse({"error": str(e)}, status=500)
 
 
-@csrf_exempt
 @api_view(['DELETE'])
-@permission_classes([AllowAny])
+@permission_classes([IsAdminUser])
 def delete_category(request, category_id):
     try:
         category = Category.objects.filter(id=category_id).first()

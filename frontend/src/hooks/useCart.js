@@ -4,6 +4,7 @@ import axios from "axios";
 const API_BASE_URL = "http://127.0.0.1:8000";
 const CART_STORAGE_KEY = "cart";
 const USER_STORAGE_KEY = "user";
+const token = localStorage.getItem('accessToken');
 
 export default function useCart() {
   const [cart, setCart] = useState([]);
@@ -20,27 +21,29 @@ export default function useCart() {
     }
   };
 
-  // 🔥 Load giỏ hàng ban đầu
   const loadCart = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      
-      // ✅ Đọc user TRỰC TIẾP từ localStorage mỗi lần gọi
+
       const user = safeJSON(USER_STORAGE_KEY);
 
-      if (user?.id) {
-        console.log("Loading cart from API for user:", user.id);
-        const res = await axios.get(`${API_BASE_URL}/cart/${user.id}/`);
-        const items = res.data.data?.items || [];
-        setCart(items);
-        console.log("Cart loaded from API:", items);
-      } else {
-        console.log("Loading cart from localStorage (guest user)");
-        const localCart = safeJSON(CART_STORAGE_KEY, []);
-        setCart(localCart);
-        console.log("Cart loaded from localStorage:", localCart);
+      // ❌ Nếu chưa login hoặc không phải customer → không load cart
+      if (!user?.id || user?.role !== "customer") {
+        console.log("Skip cart load — user is not customer");
+        setCart([]);
+        setLoading(false);
+        return;
       }
+
+      // ✅ Là customer → load từ API
+      const res = await axios.get(`${API_BASE_URL}/cart/${user.id}/`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      const items = res.data.data?.items || [];
+      setCart(items);
+
     } catch (err) {
       console.error("Load cart error:", err);
       setError(err.message);
@@ -48,7 +51,8 @@ export default function useCart() {
     } finally {
       setLoading(false);
     }
-  }, []); // ✅ Dependency rỗng - hàm này sẽ luôn đọc user mới nhất
+  }, []);
+
 
   // ✅ Load cart khi mount
   useEffect(() => {
@@ -85,7 +89,11 @@ export default function useCart() {
   const syncCartFromDB = useCallback(async (userId) => {
     try {
       console.log("Syncing cart from DB for user:", userId);
-      const res = await axios.get(`${API_BASE_URL}/cart/${userId}/`);
+      const res = await axios.get(`${API_BASE_URL}/cart/${userId}/`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
       const items = res.data.data?.items || [];
       setCart(items);
       console.log("Cart synced:", items);
@@ -104,6 +112,11 @@ export default function useCart() {
           product_id: product.id,
           product_variant_id: variantId,
           quantity
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
         });
         await syncCartFromDB(user.id);
         return true;
@@ -161,6 +174,11 @@ export default function useCart() {
       if (user?.id) {
         await axios.put(`${API_BASE_URL}/cart/${user.id}/item/${cartItemId}/`, {
           quantity,
+        },
+        {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
         });
         await syncCartFromDB(user.id);
         return true;
@@ -197,7 +215,11 @@ export default function useCart() {
 
     try {
       if (user?.id) {
-        await axios.delete(`${API_BASE_URL}/cart/${user.id}/item/${cartItemId}/`);
+        await axios.delete(`${API_BASE_URL}/cart/${user.id}/item/${cartItemId}/`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
         await syncCartFromDB(user.id);
       } else {
         const newCart = cart.filter((i) => i.id !== cartItemId);

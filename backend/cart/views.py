@@ -1,6 +1,6 @@
 from django.http import JsonResponse
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from accounts.models import Account
@@ -10,7 +10,7 @@ from .serializers import CartSerializer, CartItemSerializer
 
 
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def get_cart_by_userid(request, account_id):
     try:
         account = Account.objects.get(id=account_id)
@@ -43,7 +43,7 @@ def get_cart_by_userid(request, account_id):
 
 #Thêm sản phẩm
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def add_to_cart(request, user_id):
     try:
         product_id = request.data.get('product_id')
@@ -111,7 +111,7 @@ def add_to_cart(request, user_id):
 
 #Sửa quantity
 @api_view(['PUT'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def update_cart_item(request, user_id, item_id):
     try:
         quantity = request.data.get('quantity')
@@ -166,7 +166,7 @@ def update_cart_item(request, user_id, item_id):
 
 #Xóa sản phẩm
 @api_view(['DELETE'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def remove_from_cart(request, user_id, item_id):
     try:
         account = Account.objects.get(id=user_id)

@@ -1,0 +1,295 @@
+.voucher-card {
+    position: relative;
+    display: flex;
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    height: 180px;
+}
+
+.voucher-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.voucher-card.expired {
+    opacity: 0.6;
+    filter: grayscale(1);
+}
+
+/* Ribbon */
+.voucher-ribbon {
+    position: absolute;
+    top: 10px;
+    right: -35px;
+    background: #e70463;
+    color: white;
+    padding: 5px 40px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    transform: rotate(45deg);
+    z-index: 10;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.voucher-ribbon.expiring {
+    background: #ff9800;
+}
+
+.voucher-ribbon.hot {
+    background: #f44336;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: rotate(45deg) scale(1);
+    }
+    50% {
+        transform: rotate(45deg) scale(1.05);
+    }
+}
+
+/* Expired Overlay */
+.voucher-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+}
+
+.expired-text {
+    color: white;
+    font-size: 24px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+/* Left Section - Discount Display */
+.voucher-card-left {
+    position: relative;
+    width: 140px;
+    background: linear-gradient(135deg, #e70463 0%, #c9034f 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    flex-shrink: 0;
+}
+
+.voucher-card-left::after {
+    content: '';
+    position: absolute;
+    right: -10px;
+    top: 0;
+    bottom: 0;
+    width: 20px;
+    background: radial-gradient(circle at left, transparent 10px, white 10px);
+    background-size: 20px 20px;
+    background-repeat: repeat-y;
+}
+
+.discount-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.discount-label {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.discount-amount {
+    color: white;
+    font-size: 32px;
+    font-weight: 700;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    line-height: 1;
+}
+
+.voucher-pattern {
+    position: absolute;
+    bottom: 15px;
+    display: flex;
+    gap: 4px;
+}
+
+.pattern-dot {
+    width: 6px;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+}
+
+/* Right Section - Info */
+.voucher-card-right {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 20px;
+    padding-left: 30px;
+}
+
+.voucher-info {
+    flex: 1;
+}
+
+.voucher-code {
+    font-size: 18px;
+    font-weight: 700;
+    color: #e70463;
+    margin: 0 0 12px 0;
+    letter-spacing: 1px;
+}
+
+.voucher-details {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+.detail-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #666;
+}
+
+.detail-item strong {
+    color: #e70463;
+    font-weight: 700;
+}
+
+.detail-icon {
+    font-size: 14px;
+}
+
+/* Usage Progress */
+.voucher-usage {
+    margin-top: auto;
+}
+
+.usage-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.usage-text {
+    font-size: 11px;
+    color: #999;
+}
+
+.usage-percentage {
+    font-size: 11px;
+    color: #666;
+    font-weight: 600;
+}
+
+.usage-bar {
+    height: 6px;
+    background: #f0f0f0;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.usage-progress {
+    height: 100%;
+    background: linear-gradient(90deg, #4caf50 0%, #66bb6a 100%);
+    transition: width 0.3s ease;
+}
+
+/* Action Buttons */
+.voucher-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.save-btn,
+.copy-btn {
+    flex: 1;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.save-btn {
+    background: white;
+    color: #e70463;
+    border: 2px solid #e70463;
+}
+
+.save-btn:hover:not(:disabled) {
+    background: #e70463;
+    color: white;
+    transform: translateY(-2px);
+}
+
+.save-btn.saved {
+    background: #4caf50;
+    color: white;
+    border-color: #4caf50;
+}
+
+.save-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.copy-btn {
+    background: linear-gradient(135deg, #e70463 0%, #c9034f 100%);
+    color: white;
+}
+
+.copy-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(231, 4, 99, 0.3);
+}
+
+.copy-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+.copy-btn.copied {
+    background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+    animation: copied 0.3s ease;
+}
+
+@keyframes copied {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+

@@ -153,10 +153,33 @@
   transform: translateY(0);
 }
 
-@media (max-width: 1024px) {
-  .cart-summary {
-    width: 100%;
-    position: static;
-    margin-top: 20px;
-  }
+.summary-discount-row {
+    background: #fff5f9;
+    padding: 8px 10px;
+    border-radius: 4px;
+    margin: 4px 0;
+}
+
+.summary-discount-row .summary-label {
+    color: #e70463;
+    font-weight: 600;
+}
+
+.summary-discount {
+    color: #4caf50;
+    font-weight: 700;
+}
+
+/* Highlight discount */
+.summary-row:has(.summary-discount) {
+    animation: highlight 0.5s ease;
+}
+
+@keyframes highlight {
+    0%, 100% {
+        background: transparent;
+    }
+    50% {
+        background: #fff5f9;
+    }
 }

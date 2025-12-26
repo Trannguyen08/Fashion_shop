@@ -89,32 +89,9 @@
   border-radius: 2px;
 }
 
-.categories-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 30px;
-  justify-content: center;
-  align-items: stretch;
-}
-
-.category-item {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  background-color: #fff;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.category-item:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 18px rgba(0,0,0,0.12);
-}
-
 .featured-products-grid,
-.new-arrivals-products-grid {
+.new-arrivals-products-grid,
+.sale-products-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)) !important;
   gap: 30px;
@@ -330,118 +307,21 @@
   transform: translateY(0);
 }
 
-/* ===== FLASH SALE SECTION ===== */
-.flash-sale-section {
-  padding: 20px 20px;
-  margin: 40px 0;
-  border-radius: 16px;
-}
-
-.flash-sale-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30px;
-  flex-wrap: wrap;
-  gap: 20px;
-}
-
-.flash-sale-title-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.flash-icon {
-  font-size: 36px;
-  animation: flash 1.5s infinite;
-}
-
-@keyframes flash {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.7; transform: scale(1.1); }
-}
-
-.flash-sale-title {
-  font-size: 32px;
-  font-weight: 700;
-  color: #e70463;
-  margin: 0;
-}
-
-.countdown-timer {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.timer-label {
-  font-size: 16px;
-  font-weight: 600;
-  color: #333;
-}
-
-.timer-boxes {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.timer-box {
-  background: #e70463;
-  color: white;
-  padding: 10px 15px;
-  border-radius: 8px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-width: 60px;
-  box-shadow: 0 4px 8px rgba(231, 4, 99, 0.3);
-}
-
-.timer-number {
-  font-size: 24px;
-  font-weight: 700;
-  line-height: 1;
-}
-
-.timer-text {
-  font-size: 11px;
-  margin-top: 4px;
-  opacity: 0.9;
-}
-
-.timer-separator {
-  font-size: 24px;
-  font-weight: 700;
-  color: #e70463;
-}
-
-.flash-sale-products {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 24px;
-  margin-bottom: 30px;
-}
-
-.flash-sale-footer {
-  text-align: center;
-}
-
-.view-all-flash-btn {
+.view-all-btn {
   background: #e70463;
   color: white;
   border: none;
-  padding: 14px 40px;
+  padding: 10px 20px;
   font-size: 16px;
   font-weight: 600;
-  border-radius: 50px;
+  border-radius: 10px;
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 4px 12px rgba(231, 4, 99, 0.3);
+  margin-top: 30px;
 }
 
-.view-all-flash-btn:hover {
+.view-all-btn:hover {
   background: #c70355;
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(231, 4, 99, 0.4);

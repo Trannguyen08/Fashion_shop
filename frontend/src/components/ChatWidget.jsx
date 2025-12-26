@@ -6,16 +6,12 @@ import "./ChatWidget.css";
 
 const ChatWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      text: "Xin chào! Chúng tôi có thể giúp gì cho bạn?",
-      sender: "bot",
-      timestamp: new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })
-    }
-  ]);
+  const [messages, setMessages] = useState([]);
+  const [roomId, setRoomId] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [inputMessage, setInputMessage] = useState("");
   const messagesEndRef = useRef(null);
+  const token = localStorage.getItem("accessToken");
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -25,72 +21,82 @@ const ChatWidget = () => {
     scrollToBottom();
   }, [messages]);
 
-  const toggleChat = () => {
-    setIsOpen(!isOpen);
-  };
+  const loadMessages = async () => {
+    try {
+      setLoading(true);
 
-  const handleSendMessage = (e) => {
-    e.preventDefault();
-    
-    if (inputMessage.trim() === "") return;
+      const { data } = await axios.get("http://127.0.0.1:8000/chat/messages/", {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
 
-    const userMessage = {
-      id: messages.length + 1,
-      text: inputMessage,
-      sender: "user",
-      timestamp: new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })
-    };
+      setRoomId(data.room_id);
 
-    setMessages([...messages, userMessage]);
-    setInputMessage("");
+      const history = data.messages.map(m => ({
+        id: m.id,
+        text: m.message,
+        sender: m.sender_role === "admin" ? "bot" : "user",
+        timestamp: new Date(m.created_at).toLocaleTimeString("vi-VN", {
+          hour: "2-digit",
+          minute: "2-digit"
+        })
+      }));
 
-    setTimeout(() => {
-      const botResponse = getBotResponse(inputMessage);
-      const botMessage = {
-        id: messages.length + 2,
-        text: botResponse,
-        sender: "bot",
-        timestamp: new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })
-      };
-      setMessages(prev => [...prev, botMessage]);
-    }, 1000);
-  };
-
-  const getBotResponse = (message) => {
-    const lowerMessage = message.toLowerCase();
-
-    if (lowerMessage.includes("giá") || lowerMessage.includes("bao nhiêu")) {
-      return "Giá sản phẩm của chúng tôi dao động từ 200.000đ - 2.000.000đ. Bạn muốn xem sản phẩm nào cụ thể?";
-    } else if (lowerMessage.includes("giao hàng") || lowerMessage.includes("ship")) {
-      return "Chúng tôi có chính sách giao hàng toàn quốc. Thời gian giao hàng từ 2-5 ngày làm việc. Miễn phí ship cho đơn hàng trên 500.000đ!";
-    } else if (lowerMessage.includes("đổi trả")) {
-      return "Chúng tôi hỗ trợ đổi trả trong vòng 7 ngày kể từ ngày nhận hàng. Sản phẩm phải còn nguyên vẹn và chưa qua sử dụng.";
-    } else if (lowerMessage.includes("thanh toán")) {
-      return "Chúng tôi chấp nhận thanh toán qua: Tiền mặt khi nhận hàng (COD), Chuyển khoản ngân hàng, Ví điện tử (MoMo, ZaloPay).";
-    } else if (lowerMessage.includes("size") || lowerMessage.includes("cỡ")) {
-      return "Chúng tôi có đầy đủ các size từ S đến XXL. Bạn có thể tham khảo bảng size trên trang sản phẩm hoặc liên hệ trực tiếp để được tư vấn.";
-    } else if (lowerMessage.includes("chào") || lowerMessage.includes("hello") || lowerMessage.includes("hi")) {
-      return "Xin chào! Rất vui được hỗ trợ bạn. Bạn cần tư vấn về sản phẩm nào?";
-    } else if (lowerMessage.includes("cảm ơn") || lowerMessage.includes("thanks")) {
-      return "Rất hân hạnh được phục vụ bạn! Chúc bạn mua sắm vui vẻ! 😊";
-    } else {
-      return "Cảm ơn bạn đã liên hệ! Đội ngũ hỗ trợ sẽ phản hồi sớm nhất có thể. Bạn có thể gọi hotline: 1900-xxxx để được hỗ trợ nhanh hơn.";
+      setMessages(history);
+    } catch (err) {
+      console.error("Load chat failed", err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const quickReplies = [
-    "Chính sách giao hàng",
-    "Chính sách đổi trả",
-    "Phương thức thanh toán",
-    "Hướng dẫn chọn size"
-  ];
 
-  const handleQuickReply = (reply) => {
-    setInputMessage(reply);
+  // Toggle mở widget → load tin nhắn
+  const toggleChat = async () => {
+    const newState = !isOpen;
+    setIsOpen(newState);
+
+    if (newState) {
+      await loadMessages();
+    }
+  };
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!inputMessage.trim()) return;
+
+    const tempMsg = {
+      id: Date.now(),
+      text: inputMessage,
+      sender: "user",
+      timestamp: new Date().toLocaleTimeString("vi-VN", {
+        hour: "2-digit",
+        minute: "2-digit"
+      })
+    };
+
+    setMessages(prev => [...prev, tempMsg]);
+    const text = inputMessage;
+    setInputMessage("");
+
+    try {
+      await axios.post(
+        `http://127.0.0.1:8000/chat/room/${roomId}/send/`,
+        { message: text },
+        { 
+          headers: {
+            Authorization: `Bearer ${token}`
+          } 
+        }
+      );
+    } catch (err) {
+      console.error("Send failed", err);
+    }
   };
 
   const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage(e);
     }
@@ -98,8 +104,8 @@ const ChatWidget = () => {
 
   return (
     <>
-      {/* Chat Icon Button */}
-      <div 
+      {/* ICON BUTTON */}
+      <div
         className={`chat-icon position-fixed rounded-circle d-flex align-items-center justify-content-center ${isOpen ? "d-none" : ""}`}
         onClick={toggleChat}
         style={{
@@ -111,29 +117,15 @@ const ChatWidget = () => {
           color: "white",
           cursor: "pointer",
           boxShadow: "0 4px 12px rgba(231, 4, 99, 0.4)",
-          transition: "all 0.3s ease",
           zIndex: 999
         }}
       >
         <FaComments size={28} />
-        <span 
-          className="position-absolute bg-danger text-white rounded-circle d-flex align-items-center justify-content-center fw-bold"
-          style={{
-            top: "-5px",
-            right: "-5px",
-            width: "24px",
-            height: "24px",
-            fontSize: "12px",
-            border: "2px solid white"
-          }}
-        >
-          1
-        </span>
       </div>
 
-      {/* Chat Window */}
+      {/* CHAT WINDOW */}
       {isOpen && (
-        <div 
+        <div
           className="chat-window position-fixed bg-white rounded-4 shadow-lg d-flex flex-column"
           style={{
             bottom: "30px",
@@ -144,115 +136,70 @@ const ChatWidget = () => {
             overflow: "hidden"
           }}
         >
-          {/* Header */}
-          <div 
+          {/* HEADER */}
+          <div
             className="chat-header text-white p-3 d-flex justify-content-between align-items-center"
-            style={{
-              background: "linear-gradient(135deg, #e70463 0%, #ff1744 100%)"
-            }}
+            style={{ background: "linear-gradient(135deg, #e70463 0%, #ff1744 100%)" }}
           >
             <div className="d-flex align-items-center gap-3">
-              <div 
+              <div
                 className="rounded-circle d-flex align-items-center justify-content-center"
-                style={{
-                  width: "40px",
-                  height: "40px",
-                  background: "rgba(255, 255, 255, 0.2)"
-                }}
+                style={{ width: "40px", height: "40px", background: "rgba(255,255,255,0.2)" }}
               >
                 <FaUser />
               </div>
               <div>
                 <h6 className="mb-0 fw-semibold">Hỗ trợ khách hàng</h6>
-                <small style={{ opacity: 0.9 }}>● Online</small>
+                <small>● Online</small>
               </div>
             </div>
-            <button 
-              className="btn btn-link text-white p-0 rounded-circle d-flex align-items-center justify-content-center"
-              onClick={toggleChat}
-              style={{ 
-                textDecoration: "none",
-                width: "30px",
-                height: "30px",
-                minWidth: "30px",
-                transition: "all 0.3s ease"
-              }}
-            >
+
+            <button className="btn btn-link text-white p-0" onClick={toggleChat}>
               <FaTimes size={18} />
             </button>
           </div>
 
-          {/* Messages */}
-          <div 
-            className="chat-messages flex-grow-1 p-3 overflow-auto"
-            style={{ background: "#f8f9fa" }}
-          >
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`d-flex mb-3 ${message.sender === "user" ? "justify-content-end" : "justify-content-start"}`}
-              >
-                <div 
-                  className={`rounded-4 p-3 ${message.sender === "user" ? "text-white" : "bg-white shadow-sm"}`}
-                  style={{
-                    maxWidth: "75%",
-                    background: message.sender === "user" ? "#e70463" : "white",
-                    borderBottomLeftRadius: message.sender === "bot" ? "4px" : "16px",
-                    borderBottomRightRadius: message.sender === "user" ? "4px" : "16px"
-                  }}
+          {/* MESSAGES */}
+          <div className="chat-messages flex-grow-1 p-3 overflow-auto" style={{ background: "#f8f9fa" }}>
+            {loading ? (
+              <p className="text-center text-muted mt-3">Đang tải tin nhắn...</p>
+            ) : (
+              messages.map(msg => (
+                <div
+                  key={msg.id}
+                  className={`d-flex mb-3 ${msg.sender === "user" ? "justify-content-end" : "justify-content-start"}`}
                 >
-                  <p className="mb-1" style={{ fontSize: "14px", lineHeight: 1.5 }}>
-                    {message.text}
-                  </p>
-                  <small style={{ fontSize: "11px", opacity: 0.7 }}>
-                    {message.timestamp}
-                  </small>
-                </div>
-              </div>
-            ))}
-            <div ref={messagesEndRef} />
-
-            {/* Quick Replies */}
-            {messages.length <= 2 && (
-              <div className="mt-3">
-                <p className="text-muted mb-2" style={{ fontSize: "12px" }}>
-                  Câu hỏi thường gặp:
-                </p>
-                {quickReplies.map((reply, index) => (
-                  <button
-                    key={index}
-                    className="btn btn-outline-secondary btn-sm w-100 mb-2 text-start rounded-pill"
-                    onClick={() => handleQuickReply(reply)}
-                    style={{ fontSize: "13px" }}
+                  <div
+                    className={`rounded-4 p-3 ${msg.sender === "user" ? "text-white" : "bg-white shadow-sm"}`}
+                    style={{
+                      maxWidth: "75%",
+                      background: msg.sender === "user" ? "#e70463" : "white"
+                    }}
                   >
-                    {reply}
-                  </button>
-                ))}
-              </div>
+                    <p className="mb-1">{msg.text}</p>
+                    <small style={{ opacity: 0.7 }}>{msg.timestamp}</small>
+                  </div>
+                </div>
+              ))
             )}
+
+            <div ref={messagesEndRef} />
           </div>
 
-          {/* Input */}
+          {/* INPUT */}
           <div className="border-top p-3 bg-white d-flex gap-2">
             <input
-              type="text"
               className="form-control rounded-pill"
               placeholder="Nhập tin nhắn..."
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyPress={handleKeyPress}
-              style={{ fontSize: "14px" }}
             />
-            <button 
-              className="btn btn-primary rounded-circle d-flex align-items-center justify-content-center"
+
+            <button
+              className="btn rounded-circle d-flex align-items-center justify-content-center"
               onClick={handleSendMessage}
-              style={{
-                width: "44px",
-                height: "44px",
-                background: "#e70463",
-                border: "none",
-                transition: "all 0.3s ease"
-              }}
+              style={{ width: "44px", height: "44px", background: "#e70463", color: "white" }}
             >
               <IoSend size={20} />
             </button>

@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
     LayoutDashboard, Users, Tag, Package, ShoppingCart, 
-    Ticket, Star, Truck, CreditCard 
+    Ticket, Star, MessageCircle, CreditCard 
 } from 'lucide-react';
 
 const navItems = [
@@ -13,8 +13,8 @@ const navItems = [
     { name: 'Quản lý đơn hàng', path: '/admin/orders', Icon: ShoppingCart },
     { name: 'Quản lý Voucher', path: '/admin/vouchers', Icon: Ticket },
     { name: 'Quản lý Đánh giá', path: '/admin/reviews', Icon: Star },
-    { name: 'Quản lý Ship', path: '/admin/shipping', Icon: Truck },
     { name: 'Quản lý Giao dịch', path: '/admin/transactions', Icon: CreditCard },
+    { name: 'Hỗ trợ khách hàng', path: '/admin/support', Icon: MessageCircle },
 ];
 
 const Sidebar = () => {

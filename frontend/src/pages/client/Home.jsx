@@ -82,62 +82,6 @@ const Home = () => {
         </div>
       </div>
 
-      {/* ===== FLASH SALE SECTION ===== */}
-      <div className="flash-sale-section">
-        <div className="flash-sale-header">
-          <div className="flash-sale-title-wrapper">
-            <span className="flash-icon">⚡</span>
-            <h2 className="flash-sale-title">Flash Sale - Giảm đến 50%</h2>
-          </div>
-          <div className="countdown-timer">
-            <span className="timer-label">Kết thúc sau: </span>
-            <div className="timer-boxes">
-              <div className="timer-box">
-                <span className="timer-number">{String(timeLeft.hours).padStart(2, '0')}</span>
-                <span className="timer-text">Giờ</span>
-              </div>
-              <span className="timer-separator">:</span>
-              <div className="timer-box">
-                <span className="timer-number">{String(timeLeft.minutes).padStart(2, '0')}</span>
-                <span className="timer-text">Phút</span>
-              </div>
-              <span className="timer-separator">:</span>
-              <div className="timer-box">
-                <span className="timer-number">{String(timeLeft.seconds).padStart(2, '0')}</span>
-                <span className="timer-text">Giây</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        {loading ? (
-          <p className="loading-text">Đang tải sản phẩm flash sale...</p>
-        ) : (
-          <div className="flash-sale-products">
-            {featuredProducts.slice(0, 4).map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        )}
-        
-        <div className="flash-sale-footer">
-          <Link to="/flash-sale">
-            <button className="view-all-flash-btn">Xem tất cả Flash Sale →</button>
-          </Link>
-        </div>
-      </div>
-
-      {/* Categories */}
-      <div className="promotions-section">
-        <h2 className="section-title">Shop by Categories</h2>
-        <div className="categories-grid">
-          <CategoryItem image={tops} title="TOP" link="/category/top" />
-          <CategoryItem image={bottoms} title="BOTTOM" link="/category/bottom" />
-          <CategoryItem image={caps} title="CAP" link="/category/cap" />
-          <CategoryItem image={bags} title="BAG" link="/category/bag" />
-        </div>
-      </div>
-
       {/* ===== WHY CHOOSE US SECTION ===== */}
       <div className="why-choose-us-section">
         <h2 className="section-title">Vì sao chọn chúng tôi?</h2>
@@ -190,6 +134,26 @@ const Home = () => {
         </div>
       </div>
 
+      {/* ===== FLASH SALE SECTION ===== */}
+      <div className="promotions-section">
+          <h2 className="section-title">Flash Sale</h2>
+        {loading ? (
+          <p className="loading-text">Đang tải sản phẩm flash sale...</p>
+        ) : (
+          <div className="sale-products-grid">
+            {featuredProducts.slice(0, 4).map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        )}
+        
+        <div className="flash-sale-footer">
+          <Link to="/flash-sale">
+            <button className="view-all-btn">Xem tất cả Flash Sale →</button>
+          </Link>
+        </div>
+      </div>
+
       {/* Featured */}
       <div className="promotions-section">
         <h2 className="section-title">Featured Products</h2>
@@ -202,6 +166,11 @@ const Home = () => {
             ))}
           </div>
         )}
+        <div className="flash-sale-footer">
+          <Link to="/flash-sale">
+            <button className="view-all-btn">Xem thêm</button>
+          </Link>
+        </div>
       </div>
 
       {/* New arrivals */}
@@ -216,6 +185,11 @@ const Home = () => {
             ))}
           </div>
         )}
+        <div className="flash-sale-footer">
+          <Link to="/flash-sale">
+            <button className="view-all-btn">Xem thêm</button>
+          </Link>
+        </div>
       </div>
 
       {/* Testimonials */}

@@ -28,34 +28,49 @@ export default function Login() {
     }
 
     try {
-        const response = await axios.post(LOGIN_URL, {
-            username: username,
-            password: password,
-        });
+      const response = await axios.post(LOGIN_URL, {
+        username,
+        password,
+      });
 
-        const data = response.data;
-        if (data.message === "success") {
-          login(data);
+      const data = response.data;
 
-          window.dispatchEvent(new Event('cartStorageChange'));
-          await new Promise(resolve => setTimeout(resolve, 150));
+      if (data.message === "success") {
 
+        // Lưu auth vào context
+        login(data);
+
+        window.dispatchEvent(new Event("cartStorageChange"));
+        await new Promise(resolve => setTimeout(resolve, 150));
+
+        const role = data?.user?.role;
+        console.log("User role:", role);
+
+        // 🔹 Điều hướng theo role
+        if (role === "admin") {
+          navigate("/admin/", { replace: true });
+        } else {
           navigate("/", { replace: true });
-        } else {
-          setError(data.error || "Đăng nhập thất bại");
         }
-    } catch (error) {
-        console.error("Lỗi đăng nhập:", error);
 
-        if (error.response?.data?.error) {
-            alert(`Đăng nhập thất bại: ${error.response.data.error}`);
-        } else {
-            alert("Đã xảy ra lỗi kết nối. Vui lòng thử lại sau.");
-        }
+      } else {
+        setError(data.error || "Đăng nhập thất bại");
+      }
+
+    } catch (error) {
+      console.error("Lỗi đăng nhập:", error);
+
+      if (error.response?.data?.error) {
+        alert(`Đăng nhập thất bại: ${error.response.data.error}`);
+      } else {
+        alert("Đã xảy ra lỗi kết nối. Vui lòng thử lại sau.");
+      }
+
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
   };
+
 
 
   return (
@@ -101,7 +116,7 @@ export default function Login() {
             </div>
 
             <div className={styles.optionsRow}>
-              <a href="#forgot-password" className={styles.forgotPassword}>
+              <a href="/forgot-password" className={styles.forgotPassword}>
                 Quên mật khẩu?
               </a>
             </div>

@@ -153,8 +153,8 @@ const Products = () => {
                 </div>
 
                 <button 
-                    className="btn btn-primary"
-                    style={{maxWidth: '200px'}}
+                    className="btn btn-primary btn-sm w-auto py-2"
+                    style={{maxWidth: '220px'}}
                     onClick={() => handleOpenFormModal(null)}
                 >
                     <PlusCircle size={18} className="me-1" /> Thêm sản phẩm

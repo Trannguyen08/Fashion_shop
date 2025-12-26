@@ -12,7 +12,6 @@ from products.serializers import ProductSerializer
 
 logger = logging.getLogger(__name__)
 
-
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def get_product_by_category(request, category_name):
@@ -74,7 +73,6 @@ def get_product_by_category(request, category_name):
 
 
 def find_category_by_identifier(identifier):
-    """Tìm category theo slug hoặc name"""
     identifier_lower = identifier.lower().strip()
     category = Category.objects.filter(name__iexact=identifier_lower).first()
     if category:

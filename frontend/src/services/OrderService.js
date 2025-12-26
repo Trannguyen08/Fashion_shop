@@ -3,6 +3,15 @@ import axios from 'axios';
 const API_BASE_URL = 'http://127.0.0.1:8000';
 
 class OrderService {
+    static async createVnpayPayment({ order_id, amount }){
+        try {
+            const res = await axios.post(`${API_BASE_URL}/payment/create/`, { order_id, amount });
+            return res.data;
+        } catch (error) {
+            console.error(error);
+            return { success: false, error: "Lỗi kết nối server" };
+        }
+    };
     /**
      * Tạo đơn hàng mới
      */

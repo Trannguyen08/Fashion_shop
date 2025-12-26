@@ -4,6 +4,7 @@ from django.db import models
 from accounts.models import Account
 from customers.models import CustomerAddress
 from products.models import Product, ProductVariant
+from voucher.models import Voucher, UserVoucher
 
 
 class Order(models.Model):
@@ -16,6 +17,8 @@ class Order(models.Model):
 
     customer = models.ForeignKey(Account, on_delete=models.CASCADE, null=False)
     address = models.ForeignKey(CustomerAddress, on_delete=models.CASCADE, null=False)
+    voucher = models.ForeignKey(Voucher, on_delete=models.CASCADE, null=True)
+    user_voucher = models.ForeignKey(UserVoucher, on_delete=models.SET_NULL, null=True, blank=True)
     order_date = models.DateTimeField(auto_now_add=True)
     ship_method = models.CharField(max_length=50)
     payment_method = models.CharField(max_length=50)
