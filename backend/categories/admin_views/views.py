@@ -10,18 +10,12 @@ from utils.delete_cache import delete_product_cache
 @api_view(['GET'])
 @permission_classes([IsAdminUser])
 def get_all_category(request):
-    CACHE_KEY = "all_categories"
-    cached_data = cache.get(CACHE_KEY)
-    if cached_data:
-        return JsonResponse({"categories": cached_data}, status=200)
-
     category = Category.objects.all()
-    if not category.exists():
-        return JsonResponse({"message": "Danh sách danh mục trống"}, status=400)
-
     data = CategorySerializer(category, many=True).data
-    cache.set(CACHE_KEY, data, timeout=86400)
-    return JsonResponse({"categories": data}, status=200)
+    return JsonResponse({
+        "success": True,
+        "data": data},
+    status=200)
 
 
 @api_view(['POST'])
@@ -77,18 +71,4 @@ def update_category(request, category_id):
         return JsonResponse({"error": str(e)}, status=500)
 
 
-@api_view(['DELETE'])
-@permission_classes([IsAdminUser])
-def delete_category(request, category_id):
-    try:
-        category = Category.objects.filter(id=category_id).first()
-        if not category:
-            return JsonResponse({"error": "Category not found."}, status=404)
 
-        category.delete()
-        cache.delete("all_categories")
-        delete_product_cache()
-
-        return JsonResponse({"message": "Category deleted successfully."}, status=200)
-    except Exception as e:
-        return JsonResponse({"error": str(e)}, status=500)

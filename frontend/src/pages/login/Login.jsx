@@ -12,14 +12,15 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(""); // ✅ Thêm error state
 
   const navigate = useNavigate();
-    
   const { login } = useAuth(); 
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError(""); // Clear error
 
     if (!username.trim() || !password.trim()) {
       setError("Vui lòng nhập đầy đủ thông tin");
@@ -36,19 +37,18 @@ export default function Login() {
       const data = response.data;
 
       if (data.message === "success") {
-
-        // Lưu auth vào context
         login(data);
-
-        window.dispatchEvent(new Event("cartStorageChange"));
-        await new Promise(resolve => setTimeout(resolve, 150));
 
         const role = data?.user?.role;
         console.log("User role:", role);
 
-        // 🔹 Điều hướng theo role
+        if (role === "customer") {
+          window.dispatchEvent(new Event("cartStorageChange"));
+          await new Promise(resolve => setTimeout(resolve, 150));
+        }
+
         if (role === "admin") {
-          navigate("/admin/", { replace: true });
+          navigate("/admin", { replace: true });
         } else {
           navigate("/", { replace: true });
         }
@@ -61,17 +61,15 @@ export default function Login() {
       console.error("Lỗi đăng nhập:", error);
 
       if (error.response?.data?.error) {
-        alert(`Đăng nhập thất bại: ${error.response.data.error}`);
+        setError(error.response.data.error);
       } else {
-        alert("Đã xảy ra lỗi kết nối. Vui lòng thử lại sau.");
+        setError("Đã xảy ra lỗi kết nối. Vui lòng thử lại sau.");
       }
 
     } finally {
       setLoading(false);
     }
   };
-
-
 
   return (
     <>
@@ -82,9 +80,13 @@ export default function Login() {
         <div className={styles.loginCard}>
           <h2 className={styles.title}>ĐĂNG NHẬP</h2>
 
+          {error && (
+            <div className={styles.errorMessage}>{error}</div>
+          )}
+
           <form onSubmit={handleSubmit}>
             <div className={styles.formGroup}>
-              <label htmlFor="email" className={styles.label}>
+              <label htmlFor="username" className={styles.label}>
                 Tên đăng nhập
               </label>
               <input
@@ -121,8 +123,12 @@ export default function Login() {
               </a>
             </div>
 
-            <button type="submit" className={styles.loginButton}>
-              Đăng nhập
+            <button 
+              type="submit" 
+              className={styles.loginButton}
+              disabled={loading}
+            >
+              {loading ? "Đang đăng nhập..." : "Đăng nhập"}
             </button>
           </form>
 

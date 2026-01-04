@@ -63,7 +63,7 @@ def get_home_product(request):
         cache.set(NEW_KEY, news, timeout=86400)
 
     if reviews is None:
-        review_qs = Review.objects.filter(is_browse=False
+        review_qs = Review.objects.filter(status="approved"
                     ).select_related(
                         'product'
                     ).prefetch_related(

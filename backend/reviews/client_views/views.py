@@ -87,7 +87,7 @@ def get_all_reviews_by_product_id(request, product_id):
                 'product'
             ).prefetch_related(
                 'account__user'
-            ).all().order_by('-review_date')
+            ).filter(status='approved').order_by('-review_date')
             reviews = ReviewSerializer(reviews_qs, many=True).data
             cache.set(KEY, reviews, timeout=86400)
 

@@ -1,17 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { EyeOff, Edit } from 'lucide-react';
 import axios from 'axios';
+import { formatDate, formatNumberSmart, formatCurrency } from "../../utils/formatUtils";
+
 
 const GET_VOUCHERS_URL = 'http://127.0.0.1:8000/voucher/api/get-all/';
 const ADD_VOUCHER_URL = 'http://127.0.0.1:8000/voucher/api/add/';
 const EDIT_VOUCHER_URL = 'http://127.0.0.1:8000/voucher/api/edit/';
 const TOGGLE_VOUCHER_URL = 'http://127.0.0.1:8000/voucher/api/toggle/';
-const TOKEN = localStorage.getItem('accessToken');
-const user = JSON.parse(localStorage.getItem('user'));
-console.log("Vouchers.jsx loaded, token:", TOKEN);
-console.log("User info:", user.role);
-const refreshToken = localStorage.getItem('refreshToken');
-console.log("Refresh token:", refreshToken);
+const TOKEN = localStorage.getItem('admin_accessToken');
 
 const Vouchers = () => {
   const [vouchers, setVouchers] = useState([]);
@@ -25,7 +22,7 @@ const Vouchers = () => {
         const res = await axios.get(GET_VOUCHERS_URL, {
           headers: { Authorization: `Bearer ${TOKEN}` }
         });
-        setVouchers(res.data.data); // giả sử API trả về { data: [...] }
+        setVouchers(res.data.data); 
       } catch (err) {
         console.error(err);
         alert('Lấy danh sách voucher thất bại');
@@ -85,10 +82,12 @@ const Vouchers = () => {
     }
   };
 
-  const filteredVouchers = vouchers.filter(v => v.code.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredVouchers = vouchers.filter(v =>
+    v.code?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
-    <div className="container-fluid my-4">
+    <div className="container-fluid">
       <div className="mb-4">
         <h2 className="text-3xl fw-bold text-dark mb-1">
           <span className="me-2">🎟️</span> Quản Lý Voucher
@@ -137,11 +136,15 @@ const Vouchers = () => {
                   return (
                     <tr key={v.id}>
                       <td className="align-middle fw-bold text-success">{v.code}</td>
-                      <td className="align-middle">{v.discount_type === 'percent' ? `${v.discount_value}%` : formatCurrency(v.discount_value)}</td>
+                      <td className="align-middle">
+                        {v.discount_type === "percent"
+                          ? `${formatNumberSmart(v.discount_value)}%`
+                          : formatCurrency(v.discount_value)}
+                      </td>
                       <td className="align-middle">{formatCurrency(v.min_order_amount)}</td>
                       <td className="align-middle">{v.used_count}/{v.quantity}</td>
-                      <td className="align-middle">{v.start_date.split('T')[0]}</td>
-                      <td className="align-middle">{v.end_date.split('T')[0]}</td>
+                      <td className="align-middle">{formatDate(v.start_date)}</td>
+                      <td className="align-middle">{formatDate(v.end_date)}</td>
                       <td className="align-middle">
                         {expired ? <span className="badge bg-danger">Hết hạn</span>
                                  : v.is_active ? <span className="badge bg-success">Đang hoạt động</span>
@@ -188,6 +191,7 @@ const Vouchers = () => {
 };
 
 const VoucherModal = ({ voucher, onClose, onSave }) => {
+  const isEditMode = !!voucher;
   const [formData, setFormData] = useState({
     code: voucher?.code || '',
     discount_type: voucher?.discount_type || 'percent',
@@ -215,13 +219,13 @@ const VoucherModal = ({ voucher, onClose, onSave }) => {
           <div className="row">
             <div className="col-md-6 mb-3">
               <label className="form-label">Mã Voucher</label>
-              <input type="text" className="form-control" value={formData.code} disabled />
+              <input type="text" name="code" className="form-control" value={formData.code} onChange={handleChange} disabled={isEditMode} />
             </div>
             <div className="col-md-6 mb-3">
               <label className="form-label">Loại</label>
               <select className="form-select" name="discount_type" value={formData.discount_type} onChange={handleChange}>
-                <option value="percent">Phần trăm (%)</option>
-                <option value="fixed">Số tiền (₫)</option>
+                <option value="percent">Phần trăm</option>
+                <option value="fixed">Số tiền</option>
               </select>
             </div>
             <div className="col-md-6 mb-3">

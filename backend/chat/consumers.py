@@ -1,4 +1,6 @@
 import json
+
+from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 from .models import ChatMessage
 
@@ -25,11 +27,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
         message = data['message']
         sender = self.scope["user"]
 
-        chat = ChatMessage.objects.create(
-            room_id=self.room_id,
-            sender=sender,
-            message=message
-        )
+        # Lưu vào DB thông qua một hàm bọc async
+        chat = await self.save_message(sender, message)
 
         await self.channel_layer.group_send(
             self.room_group_name,
@@ -39,6 +38,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'sender': sender.username,
                 'time': chat.created_at.strftime("%H:%M")
             }
+        )
+
+    @database_sync_to_async
+    def save_message(self, sender, message):
+        return ChatMessage.objects.create(
+            room_id=self.room_id,
+            sender=sender,
+            message=message
         )
 
     async def chat_message(self, event):

@@ -457,7 +457,7 @@ const Profile = () => {
       return;
     }
 
-    const token = localStorage.getItem('accessToken');
+    const token = localStorage.getItem('user_accessToken');
 
     try {
       const res = await axios.put(

@@ -5,12 +5,17 @@ from .serializers import AccountSidebarSerializer
 from accounts.models import Account
 from .models import ChatRoom, ChatMessage
 from .serializers import ChatMessageSerializer
+from django.db.models import Max
 
 
 @api_view(["GET"])
 @permission_classes([IsAdminUser])
 def admin_sidebar_customers(request):
-    customers = Account.objects.filter(customer_room__isnull=False).distinct()
+    customers = Account.objects.all().annotate(
+        latest_message_time=Max('customer_room__chatmessage__created_at')
+    ).prefetch_related('user').distinct()
+    customers = customers.order_by('-latest_message_time')
+
     data = AccountSidebarSerializer(customers, many=True).data
     return Response({"customers": data})
 
@@ -26,6 +31,7 @@ def admin_get_messages(request, customer_id):
     messages = ChatMessage.objects.filter(room=room).order_by("created_at")
     data = ChatMessageSerializer(messages, many=True).data
     return Response({"room_id": room.id, "messages": data})
+
 
 @api_view(["POST"])
 @permission_classes([IsAdminUser])

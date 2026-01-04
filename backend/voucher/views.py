@@ -2,7 +2,7 @@ from django.utils import timezone
 from django.db.models import F
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
-
+from django.core.cache import cache
 from utils.delete_cache import delete_voucher_cache
 from .models import Voucher, UserVoucher
 from .serializers import VoucherSerializer, UserVoucherSerializer
@@ -67,7 +67,9 @@ def admin_edit_voucher(request, voucher_id):
 def admin_hide_voucher(request):
     voucher_id = request.data.get("id")
     voucher = get_object_or_404(Voucher, id=voucher_id)
-    voucher.is_active = False
+    if voucher.is_active:
+        voucher.is_active = False
+    voucher.is_active = True
     voucher.save()
     delete_voucher_cache()
     return JsonResponse({
@@ -108,7 +110,6 @@ def user_active_vouchers(request):
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def get_active_vouchers(request):
-    from django.core.cache import cache
     now = timezone.now()
     key = "all_active_vouchers"
     data = cache.get(key)

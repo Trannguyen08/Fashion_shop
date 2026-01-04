@@ -8,7 +8,7 @@ class VoucherService {
      */
     static async getAvailableVouchers() {
         try {
-            const token = localStorage.getItem('accessToken');
+            const token = localStorage.getItem('user_accessToken');
             
             if (!token) {
                 return {
@@ -18,7 +18,7 @@ class VoucherService {
                 };
             }
 
-            const response = await axios.get(`${API_URL}/voucher/get-voucher-active/`, {
+            const response = await axios.get(`${API_URL}/voucher/get-user-voucher/`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
@@ -62,14 +62,14 @@ class VoucherService {
         const errors = [];
 
         // Kiểm tra voucher còn hiệu lực
-        if (voucher.status !== 'active') {
+        if (voucher.is_active !== true) {
             errors.push('Voucher đã bị vô hiệu hóa');
         }
 
         // Kiểm tra thời hạn
         const now = new Date();
-        const startDate = new Date(voucher.start_date || voucher.startDate);
-        const endDate = new Date(voucher.end_date || voucher.endDate);
+        const startDate = new Date(voucher.start_date);
+        const endDate = new Date(voucher.end_date);
 
         if (now < startDate) {
             errors.push('Voucher chưa có hiệu lực');
@@ -80,14 +80,14 @@ class VoucherService {
         }
 
         // Kiểm tra giá trị đơn hàng tối thiểu
-        const minOrder = voucher.min_order_value || voucher.minOrder || 0;
+        const minOrder = voucher.min_order_amount;
         if (orderTotal < minOrder) {
             errors.push(`Đơn hàng tối thiểu ${this.formatCurrency(minOrder)}`);
         }
 
         // Kiểm tra số lượng đã sử dụng
-        const maxUsage = voucher.max_usage || voucher.maxUsage || 0;
-        const usedCount = voucher.used_count || voucher.used || 0;
+        const maxUsage = voucher.quantity;
+        const usedCount = voucher.used_count;
         
         if (usedCount >= maxUsage) {
             errors.push('Voucher đã hết lượt sử dụng');
@@ -127,27 +127,6 @@ class VoucherService {
         return 0;
     }
 
-    /**
-     * Transform voucher data từ backend
-     */
-    static transformVoucherFromBackend(voucherData) {
-        return {
-            id: voucherData.id || voucherData.voucher_id,
-            code: voucherData.code || voucherData.voucher_code,
-            type: voucherData.discount_type || voucherData.type,
-            value: voucherData.discount_value || voucherData.value,
-            minOrder: voucherData.min_order_value || voucherData.minOrder || 0,
-            maxUsage: voucherData.max_usage || voucherData.maxUsage,
-            used: voucherData.used_count || voucherData.used || 0,
-            startDate: voucherData.start_date || voucherData.startDate,
-            endDate: voucherData.end_date || voucherData.endDate,
-            status: voucherData.status || 'active',
-            description: voucherData.description || '',
-            maxDiscountAmount: voucherData.max_discount_amount || voucherData.maxDiscountAmount,
-            // Raw data để gửi lên server
-            rawData: voucherData
-        };
-    }
 
     /**
      * Format currency

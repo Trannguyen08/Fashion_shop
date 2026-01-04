@@ -6,6 +6,7 @@ import VoucherService from '../../services/VoucherService';
 import CartSummary from '../../components/CartItem/CartSummary'; 
 import { useNavigate } from 'react-router-dom'; 
 import { toast } from "react-toastify";
+import { formatDate, formatNumberSmart} from "../../utils/formatUtils";
 
 const Checkout = ({ cartItems = [], totalAmount = 0, onBack = () => {} }) => {
     const [addresses, setAddresses] = useState([]);
@@ -18,7 +19,7 @@ const Checkout = ({ cartItems = [], totalAmount = 0, onBack = () => {} }) => {
     const [vouchers, setVouchers] = useState([]);
     const [selectedVoucher, setSelectedVoucher] = useState(null);
     const [vouchersLoading, setVouchersLoading] = useState(false);
-    const [showVoucherList, setShowVoucherList] = useState(false);
+    const [showVoucherModal, setShowVoucherModal] = useState(false);
     
     const [formData, setFormData] = useState({
         shippingMethod: 'standard',
@@ -33,6 +34,18 @@ const Checkout = ({ cartItems = [], totalAmount = 0, onBack = () => {} }) => {
         loadAddresses();
         loadVouchers();
     }, []);
+
+    // Prevent body scroll when modal is open
+    useEffect(() => {
+        if (showVoucherModal) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [showVoucherModal]);
 
     const loadAddresses = async () => {
         setLoading(true);
@@ -60,12 +73,8 @@ const Checkout = ({ cartItems = [], totalAmount = 0, onBack = () => {} }) => {
         const result = await VoucherService.getAvailableVouchers();
         
         if (result.success) {
-            const transformedVouchers = result.data.map(v => 
-                VoucherService.transformVoucherFromBackend(v)
-            );
-            setVouchers(transformedVouchers);
+            setVouchers(result.data);
         } else if (result.needLogin) {
-            // Không hiển thị lỗi nếu chưa login, chỉ ẩn phần voucher
             setVouchers([]);
         }
         setVouchersLoading(false);
@@ -80,7 +89,6 @@ const Checkout = ({ cartItems = [], totalAmount = 0, onBack = () => {} }) => {
     };
 
     const handleVoucherSelect = (voucher) => {
-        // Validate voucher
         const orderSubTotal = cartItems.reduce((sum, item) => 
             sum + item.quantity * (item.price || item.current_price), 0
         );
@@ -95,7 +103,7 @@ const Checkout = ({ cartItems = [], totalAmount = 0, onBack = () => {} }) => {
         }
 
         setSelectedVoucher(voucher);
-        setShowVoucherList(false);
+        setShowVoucherModal(false);
         toast.success(`Áp dụng voucher ${voucher.code} thành công!`, {
             position: "bottom-right",
             autoClose: 2000
@@ -192,11 +200,9 @@ const Checkout = ({ cartItems = [], totalAmount = 0, onBack = () => {} }) => {
                 return;
             }
 
-            // Tạo order trên backend
             const result = await OrderService.createOrder(orderPayload);
 
             if (result.success) {
-                // Nếu thanh toán bằng VNPAY
                 if (formData.paymentMethod === 'bank') {
                     const paymentResult = await OrderService.createVnpayPayment({
                         order_id: result.data.order_id,
@@ -204,7 +210,6 @@ const Checkout = ({ cartItems = [], totalAmount = 0, onBack = () => {} }) => {
                     });
 
                     if (paymentResult.success && paymentResult.payment_url) {
-                        // Redirect sang VNPAY
                         window.location.href = paymentResult.payment_url;
                         return;
                     } else {
@@ -214,7 +219,6 @@ const Checkout = ({ cartItems = [], totalAmount = 0, onBack = () => {} }) => {
                     }
                 }
 
-                // Nếu thanh toán COD, đi thẳng trang success
                 localStorage.removeItem('cart');
 
                 const getEstimatedDeliveryDate = (method) => {
@@ -264,7 +268,6 @@ const Checkout = ({ cartItems = [], totalAmount = 0, onBack = () => {} }) => {
         }
     };
 
-
     const totals = calculateTotals();
 
     return (
@@ -280,7 +283,6 @@ const Checkout = ({ cartItems = [], totalAmount = 0, onBack = () => {} }) => {
                                 <p className="loading-text">Đang tải địa chỉ...</p>
                             ) : addresses.length > 0 ? (
                                 <div className="address-selection-wrapper">
-                                    {/* Combobox chọn địa chỉ */}
                                     <div className="address-select-group">
                                         <label htmlFor="addressSelect" className="select-label">
                                             Chọn địa chỉ giao hàng
@@ -300,7 +302,6 @@ const Checkout = ({ cartItems = [], totalAmount = 0, onBack = () => {} }) => {
                                         </select>
                                     </div>
 
-                                    {/* Hiển thị chi tiết địa chỉ đã chọn */}
                                     {selectedAddress && (
                                         <div className="address-detail-card">
                                             <div className="address-detail-header">
@@ -346,7 +347,6 @@ const Checkout = ({ cartItems = [], totalAmount = 0, onBack = () => {} }) => {
                                 <p className="loading-text">Đang tải voucher...</p>
                             ) : vouchers.length > 0 ? (
                                 <div className="voucher-selection-wrapper">
-                                    {/* Hiển thị voucher đã chọn hoặc nút chọn voucher */}
                                     {selectedVoucher ? (
                                         <div className="selected-voucher-card">
                                             <div className="voucher-header">
@@ -354,9 +354,9 @@ const Checkout = ({ cartItems = [], totalAmount = 0, onBack = () => {} }) => {
                                                 <div className="voucher-info">
                                                     <strong className="voucher-code">{selectedVoucher.code}</strong>
                                                     <span className="voucher-desc">
-                                                        Giảm {selectedVoucher.type === 'percent' 
-                                                            ? `${selectedVoucher.value}%` 
-                                                            : VoucherService.formatCurrency(selectedVoucher.value)}
+                                                        Giảm {selectedVoucher.discount_type === 'percent' 
+                                                            ? `${selectedVoucher.discount_value}%` 
+                                                            : VoucherService.formatCurrency(selectedVoucher.discount_value)}
                                                     </span>
                                                 </div>
                                                 <button
@@ -371,62 +371,22 @@ const Checkout = ({ cartItems = [], totalAmount = 0, onBack = () => {} }) => {
                                             <div className="voucher-discount-info">
                                                 💰 Bạn được giảm: {VoucherService.formatCurrency(totals.discount)}
                                             </div>
+                                            <button
+                                                type="button"
+                                                className="btn-change-voucher"
+                                                onClick={() => setShowVoucherModal(true)}
+                                            >
+                                                Đổi voucher khác
+                                            </button>
                                         </div>
                                     ) : (
                                         <button
                                             type="button"
                                             className="btn-select-voucher"
-                                            onClick={() => setShowVoucherList(!showVoucherList)}
+                                            onClick={() => setShowVoucherModal(true)}
                                         >
-                                            {showVoucherList ? '▼' : '▶'} Chọn voucher ({vouchers.length} khả dụng)
+                                            🎟️ Chọn voucher ({vouchers.length} khả dụng)
                                         </button>
-                                    )}
-
-                                    {/* Danh sách voucher */}
-                                    {showVoucherList && !selectedVoucher && (
-                                        <div className="voucher-list">
-                                            {vouchers.map(voucher => {
-                                                const validation = VoucherService.validateVoucher(
-                                                    voucher, 
-                                                    totals.subTotal, 
-                                                    cartItems
-                                                );
-                                                const isValid = validation.isValid;
-
-                                                return (
-                                                    <div 
-                                                        key={voucher.id} 
-                                                        className={`voucher-item ${!isValid ? 'disabled' : ''}`}
-                                                        onClick={() => isValid && handleVoucherSelect(voucher)}
-                                                    >
-                                                        <div className="voucher-item-header">
-                                                            <div className="voucher-icon-small">🎟️</div>
-                                                            <div className="voucher-item-info">
-                                                                <strong>{voucher.code}</strong>
-                                                                <span className="voucher-value">
-                                                                    Giảm {voucher.type === 'percent' 
-                                                                        ? `${voucher.value}%` 
-                                                                        : VoucherService.formatCurrency(voucher.value)}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                        <div className="voucher-item-details">
-                                                            <div className="voucher-condition">
-                                                                Đơn tối thiểu: {VoucherService.formatCurrency(voucher.minOrder)}
-                                                            </div>
-                                                            <div className="voucher-expiry">
-                                                                HSD: {VoucherService.formatDate(voucher.endDate)}
-                                                            </div>
-                                                            {!isValid && (
-                                                                <div className="voucher-error">
-                                                                    ⚠️ {validation.errors[0]}
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
                                     )}
                                 </div>
                             ) : (
@@ -552,6 +512,68 @@ const Checkout = ({ cartItems = [], totalAmount = 0, onBack = () => {} }) => {
                     />
                 </div>
             </div>
+
+            {/* Voucher Modal */}
+            {showVoucherModal && (
+                <div className="modal-overlay" onClick={() => setShowVoucherModal(false)}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3 className="modal-title">Chọn Voucher</h3>
+                            <button 
+                                className="modal-close"
+                                onClick={() => setShowVoucherModal(false)}
+                            >
+                                ✕
+                            </button>
+                        </div>
+                        <div className="modal-body">
+                            <div className="voucher-list-modal">
+                                {vouchers.map(voucher => {
+                                    const validation = VoucherService.validateVoucher(
+                                        voucher, 
+                                        totals.subTotal, 
+                                        cartItems
+                                    );
+                                    const isValid = validation.isValid;
+
+                                    return (
+                                        <div 
+                                            key={voucher.id} 
+                                            className={`voucher-item-modal ${!isValid ? 'disabled' : ''} ${selectedVoucher?.id === voucher.id ? 'selected' : ''}`}
+                                            onClick={() => isValid && handleVoucherSelect(voucher)}
+                                        >
+                                            <div className="voucher-item-header">
+                                                <div className="voucher-icon-small">🎟️</div>
+                                                <div className="voucher-item-info">
+                                                    <strong>{voucher.code}</strong>
+                                                    <span className="voucher-value">
+                                                        Giảm {voucher.discount_type === 'percent' 
+                                                            ? `${formatNumberSmart(voucher.discount_value)}%` 
+                                                            : formatNumberSmart(voucher.discount_value)}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div className="voucher-item-details">
+                                                <div className="voucher-condition">
+                                                    Đơn tối thiểu: {VoucherService.formatCurrency(voucher.min_order_amount)}
+                                                </div>
+                                                <div className="voucher-expiry">
+                                                    HSD: {formatDate(voucher.end_date)}
+                                                </div>
+                                                {!isValid && (
+                                                    <div className="voucher-error">
+                                                        ⚠️ {validation.errors[0]}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

@@ -1,31 +1,43 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Pencil, Trash, PlusCircle, Search, EyeIcon } from 'lucide-react';
+import { Pencil, PlusCircle, Search } from 'lucide-react';
 import { filterList } from '../../utils/searchUtils';
-import './Categories.css'; 
+import './Common.css';
+import axios from 'axios';
+import { toast } from 'react-toastify';
 
 const API_BASE_URL = 'http://127.0.0.1:8000/api/category';
+const token = localStorage.getItem('admin_accessToken');
 
 const Categories = () => {
-  const [categories, setCategories] = useState([]); 
+  const [categories, setCategories] = useState([]);
   const [showFormModal, setShowFormModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [editingCategory, setEditingCategory] = useState(null); 
-  const [deletingCategoryId, setDeletingCategoryId] = useState(null); 
-  const [formData, setFormData] = useState({ name: '', status: 'Active' }); 
-  const [searchTerm, setSearchTerm] = useState(''); 
+  const [editingCategory, setEditingCategory] = useState(null);
+  const [deletingCategoryId, setDeletingCategoryId] = useState(null);
 
-  // Fetch categories khi component mount
+  const [formData, setFormData] = useState({
+    name: '',
+    status: 'Active'
+  });
+
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // ================= FETCH LIST =================
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/all-category/`);
-        if (!res.ok) throw new Error('Không thể tải danh mục');
-        const data = await res.json();
-        setCategories(data.categories || []);
-        console.log("Fetched categories:", data.categories || []);
+        const res = await axios.get(`${API_BASE_URL}/all-category/`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        setCategories(res.data.data || []);
+        console.log("Fetched categories:", res.data.data || []);
+
       } catch (err) {
+        console.error("Fetch categories error:", err);
       }
     };
+
     fetchCategories();
   }, []);
 
@@ -33,14 +45,16 @@ const Categories = () => {
     return filterList(categories, searchTerm, cat => cat.name);
   }, [categories, searchTerm]);
 
+  // ================= FORM MODAL =================
   const handleOpenFormModal = (categoryToEdit = null) => {
     setEditingCategory(categoryToEdit);
-    setFormData({ 
-      category_name: categoryToEdit ? categoryToEdit.name : '', 
+    setFormData({
+      name: categoryToEdit ? categoryToEdit.name : '',
       status: categoryToEdit ? categoryToEdit.status : 'Active'
     });
     setShowFormModal(true);
   };
+
 
   const handleCloseFormModal = () => {
     setShowFormModal(false);
@@ -50,71 +64,67 @@ const Categories = () => {
 
   const handleFormChange = (e) => {
     const { id, value } = e.target;
-    setFormData({ ...formData, [id]: value });
+    setFormData(prev => ({ ...prev, [id]: value }));
   };
 
+  // ================= SAVE (ADD / UPDATE) =================
   const handleSaveCategory = async (e) => {
     e.preventDefault();
-    const categoryData = { name: formData.name, status: formData.status };
 
-    try {
-      if (editingCategory) {
-        // Update category
-        const res = await fetch(`${API_BASE_URL}/update/${editingCategory.id}/`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(categoryData)
-        });
-        if (!res.ok) throw new Error('Cập nhật thất bại');
-        const updatedCategory = await res.json();
-        setCategories(categories.map(cat => 
-          cat.id === editingCategory.id ? { ...cat, ...updatedCategory.category } : cat
-        ));
-      } else {
-        // Add new category
-        const res = await fetch(`${API_BASE_URL}/add/`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(categoryData)
-        });
-        if (!res.ok) throw new Error('Thêm mới thất bại');
-        const newCategory = await res.json();
-        setCategories([...categories, { 
-          ...newCategory.category, product_count: 0
-        }]);
-      }
-      handleCloseFormModal();
-    } catch (err) {
-      alert(err.message);
-    }
-  };
-
-  const handleOpenDeleteModal = (id) => {
-    setDeletingCategoryId(id);
-    setShowDeleteModal(true);
-  };
-
-  const handleCloseDeleteModal = () => {
-    setShowDeleteModal(false);
-    setDeletingCategoryId(null);
-  };
-
-  const handleConfirmDelete = async () => {
-    const category = categories.find(cat => cat.id === deletingCategoryId);
-    if (category.productCount > 0) {
-      alert('Không thể xóa danh mục còn sản phẩm!');
-      handleCloseDeleteModal();
+    if (!formData.name.trim()) {
+      alert("Tên danh mục không được để trống");
       return;
     }
 
     try {
-      const res = await fetch(`${API_BASE_URL}/delete/${deletingCategoryId}/`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Xóa thất bại');
-      setCategories(categories.filter(cat => cat.id !== deletingCategoryId));
-      handleCloseDeleteModal();
+      if (editingCategory) {
+        // UPDATE
+        const res = await axios.put(
+          `${API_BASE_URL}/update/${editingCategory.id}/`,
+          formData,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        const updatedCategory = res.data.category;
+
+        setCategories(categories.map(cat =>
+          cat.id === editingCategory.id ? { ...cat, ...updatedCategory } : cat
+        ));
+
+        handleCloseFormModal();
+        toast.success("Cập nhật danh mục thành công", { position: 'bottom-right', autoClose: 2000 });
+
+      } else {
+        // ADD
+        const res = await axios.post(
+          `${API_BASE_URL}/add/`,
+          formData,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        const newCategory = res.data.category;
+
+        setCategories([
+          ...categories,
+          { ...newCategory, product_count: 0 }
+        ]);
+
+        handleCloseFormModal();
+        toast.success("Thêm danh mục thành công", { position: 'bottom-right', autoClose: 2000 });
+      }
+
+      handleCloseFormModal();
+
     } catch (err) {
-      alert(err.message);
+      console.error("Save category error:", err);
+      toast.error("Lưu danh mục thất bại", { position: 'bottom-right', autoClose: 2000 });
     }
+  };
+
+  // ================= DELETE =================
+  const handleCloseDeleteModal = () => {
+    setShowDeleteModal(false);
+    setDeletingCategoryId(null);
   };
 
   const getStatusBadgeClass = (status) => {
@@ -184,13 +194,6 @@ const Categories = () => {
                       >
                         <Pencil size={18} />
                       </button>
-                      <button
-                        className="btn btn-sm btn-link text-danger p-0 icon-action delete"
-                        title="Xóa"
-                        onClick={() => handleOpenDeleteModal(cat.id)}
-                      >
-                        <Trash size={18} />
-                      </button>
                     </td>
                   </tr>
                 ))}
@@ -216,8 +219,8 @@ const Categories = () => {
                     <input
                       type="text"
                       className="form-control"
-                      id="category_name"
-                      value={formData.category_name}
+                      id="name"
+                      value={formData.name}
                       onChange={handleFormChange}
                       required
                     />

@@ -15,17 +15,16 @@ from utils.delete_cache import delete_order_cache
 @permission_classes([IsAdminUser])
 def get_all_orders_admin(request):
     try:
-        KEY = "all_orders_admin"
-        orders_data = cache.get(KEY)
+        orders_qs = Order.objects.all().order_by('-order_date')
+        orders_data = OrderSerializer(orders_qs, many=True).data
 
-        if orders_data is None:
-            orders_qs = Order.objects.all().order_by('-order_date')
-            orders_data = OrderSerializer(orders_qs, many=True).data
-            cache.set(KEY, orders_data, timeout=600)
-
-        return JsonResponse(orders_data, safe=False, status=200)
+        return JsonResponse({
+            "success": True,
+            "data": orders_data
+        }, status=200)
 
     except Exception as e:
+        print(str(e))
         return JsonResponse({"error": str(e)}, status=500)
 
 

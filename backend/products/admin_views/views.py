@@ -1,7 +1,7 @@
 from django.http import JsonResponse
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAdminUser
 from django.core.cache import cache
 from ..models import Product, Category, ProductVariant, ProductImage
 from ..serializers import ProductSerializer
@@ -11,21 +11,15 @@ from utils.delete_cache import delete_product_cache
 
 
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([IsAdminUser])
 def get_all_product(request):
     page_number = request.query_params.get('page', 1)
-    CACHE_KEY = f"all_products_page_{page_number}"
-
-    cached_data = cache.get(CACHE_KEY)
-    if cached_data:
-        return JsonResponse(cached_data)
-
     products = Product.objects.select_related("category") \
         .prefetch_related("product_imgs", "product_variants") \
-        .all()
+        .all().order_by('-created_at')
 
     paginator = PageNumberPagination()
-    paginator.page_size = 5  # mỗi page 5 sản phẩm
+    paginator.page_size = 5
     result_page = paginator.paginate_queryset(products, request)
 
     serializer = ProductSerializer(result_page, many=True)
@@ -36,11 +30,10 @@ def get_all_product(request):
         "total_items": paginator.page.paginator.count
     }
 
-    cache.set(CACHE_KEY, data, timeout=86400)  # cache 1 ngày
     return JsonResponse(data)
 
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([IsAdminUser])
 def add_product(request):
     try:
         print(config("API_CLOUD_KEY"))
@@ -123,7 +116,7 @@ def add_product(request):
 
 
 @api_view(['PUT'])
-@permission_classes([AllowAny])
+@permission_classes([IsAdminUser])
 def update_product(request, product_id):
     try:
         print("REQUEST POST:", request.POST)
@@ -228,7 +221,7 @@ def update_product(request, product_id):
 
 
 @api_view(['PUT'])
-@permission_classes([AllowAny])
+@permission_classes([IsAdminUser])
 def update_status(request, product_id):
     try:
         status_value = request.data.get("status")

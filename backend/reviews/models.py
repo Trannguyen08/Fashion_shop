@@ -8,7 +8,7 @@ class Review(models.Model):
     rating = models.IntegerField(default=0)
     comment = models.TextField(blank=True)
     review_date = models.DateTimeField(auto_now_add=True)
-    is_browse = models.BooleanField(default=False)
+    status = models.TextField(default='Pending')
 
     class Meta:
         indexes = [

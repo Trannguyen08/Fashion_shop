@@ -24,7 +24,6 @@ import Products from '../pages/admin/Products';
 import Orders from '../pages/admin/Orders';
 import Vouchers from '../pages/admin/Vouchers';
 import Reviews from '../pages/admin/Reviews';
-import Transactions from '../pages/admin/Transactions';
 import UserDetail from '../pages/admin/UserDetail';
 import ProtectedRoute from './ProtectedRoute';
 import ForgotPassword from '../pages/login/ForgotPassword';
@@ -63,12 +62,12 @@ export default function RouteConfig() {
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Dashboard />} /> 
           <Route path="customers" element={<Customers />} />
+          <Route path="customers-details/:accountId" element={<UserDetail />} />
           <Route path="categories" element={<Categories />} />
           <Route path="products" element={<Products />} />
           <Route path="orders" element={<Orders />} />
           <Route path="vouchers" element={<Vouchers />} />
           <Route path="reviews" element={<Reviews />} />
-          <Route path="transactions" element={<Transactions />} />
           <Route path="support" element={<AdminChat />} />
           <Route path="*" element={<h1>404 - Admin Page Not Found</h1>} />
         </Route>

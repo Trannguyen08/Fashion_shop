@@ -3,7 +3,10 @@ import axios from 'axios';
 import { Pencil, PlusCircle, Search, EyeIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import ProductFormModal from './ProductFormModal';
 import { filterListByFields } from '../../utils/searchUtils';
-import './Categories.css';
+import './Common.css';
+
+const API_BASE_URL = 'http://127.0.0.1:8000/api/product';
+const token = localStorage.getItem('admin_accessToken');
 
 const Products = () => {
     const [products, setProducts] = useState([]);
@@ -19,7 +22,9 @@ const Products = () => {
 
     const fetchProducts = async (page = 1) => {
         try {
-            const response = await axios.get(`http://127.0.0.1:8000/api/product/all-product/?page=${page}`);
+            const response = await axios.get(`${API_BASE_URL}/all-product/?page=${page}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             const mappedProducts = response.data.products.map(mapProduct);
             setProducts(mappedProducts);
             setTotalPages(response.data.total_pages);
@@ -32,17 +37,17 @@ const Products = () => {
     const mapProduct = (p) => ({
         id: p.id,
         name: p.name,
-        old_price: parseFloat(p.old_price),  // 🔥 Đổi từ basePrice
-        current_price: p.current_price ? parseFloat(p.current_price) : null,  // 🔥 Đổi từ salePrice
+        old_price: parseFloat(p.old_price),  
+        current_price: p.current_price ? parseFloat(p.current_price) : null,  
         description: p.description,
         sold: p.sold || 0,
-        product_img: p.product_img,  // 🔥 Đổi từ mainImage
-        product_variants: p.product_variants.map(v => ({  // 🔥 Đổi từ variants
+        product_img: p.product_img,  
+        product_variants: p.product_variants.map(v => ({ 
             id: v.id,
             sku: v.sku,
             size: v.size,
             color: v.color,
-            stock_quantity: v.stock_quantity,  // 🔥 Giữ nguyên tên backend
+            stock: v.stock_quantity,  
             PV_img: v.PV_img,
             status: v.status
         })),
@@ -50,12 +55,12 @@ const Products = () => {
             id: img.id,
             PI_img: img.PI_img
         })),
-        category_name: p.category_name,  // 🔥 Thêm category_name
-        category_id: p.category_id,  // 🔥 Thêm category_id nếu backend trả về
+        category_name: p.category_name, 
+        category_id: p.category_id,  
         status: p.status === 'out-of-stock' ? 'Hết hàng' : p.status,
-        is_new: p.is_new,  // 🔥 Đổi từ isNew
-        is_featured: p.is_featured,  // 🔥 Đổi từ isFeatured
-        created_at: p.created_at  // 🔥 Đổi từ createdAt
+        is_new: p.is_new,  
+        is_featured: p.is_featured, 
+        created_at: p.created_at 
     });
 
     const getStatusBadgeClass = (status) => {
@@ -83,13 +88,15 @@ const Products = () => {
 
     const handleSaveProduct = async (responseData) => {
         try {
-            console.log("✅ Products nhận được response:", responseData);
+            console.log("Products nhận được response:", responseData);
             
             let productData;
             
             // Nếu backend chỉ trả {message, product_id} → fetch lại
             if (responseData.product_id && !responseData.name) {
-                const res = await axios.get(`http://127.0.0.1:8000/api/product/${responseData.product_id}/`);
+                const res = await axios.get(`${API_BASE_URL}/${responseData.product_id}/`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
                 productData = res.data;
             } else {
                 // Backend trả đầy đủ data
@@ -116,7 +123,9 @@ const Products = () => {
     const handleToggleStatus = async (productId, currentStatus) => {
         try {
             const newStatus = currentStatus === 'Active' ? 'Hidden' : 'Active';
-            await axios.put(`http://127.0.0.1:8000/api/product/update/status/${productId}/`, { status: newStatus });
+            await axios.put(`${API_BASE_URL}/update/status/${productId}/`, { status: newStatus }, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             setProducts(products.map(p =>
                 p.id === productId ? { ...p, status: newStatus } : p
             ));
@@ -219,7 +228,7 @@ const Products = () => {
                                             </td>
 
                                             <td className="text-center px-4 py-3">
-                                                {product.product_variants.reduce((sum, v) => sum + v.stock_quantity, 0)}
+                                                {product.product_variants.reduce((sum, v) => sum + v.stock, 0)}
                                             </td>
 
                                             <td className="text-center px-4 py-3">

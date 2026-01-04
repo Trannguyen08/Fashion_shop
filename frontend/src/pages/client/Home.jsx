@@ -1,21 +1,22 @@
 import React, { useState, useEffect } from "react";
-import CategoryItem from "../../components/CategoryItem/CategoryItem";
 import ProductCard from "../../components/Product/ProductCard";
+import VoucherCard from "../../components/VoucherCard"; // ← Import VoucherCard có sẵn
 import Testimonials from "../../components/Testimonials"; 
-import tops from "../../assets/images/tops.webp";
-import bottoms from "../../assets/images/bottoms.webp";
-import caps from "../../assets/images/caps.jpg";
-import bags from "../../assets/images/bags.jpg";
 import ChatWidget from "../../components/ChatWidget";
 import { Link } from "react-router-dom";
-import { FaShippingFast, FaUndo, FaShieldAlt, FaHeadset } from "react-icons/fa";
+import { FaShippingFast, FaUndo, FaShieldAlt, FaHeadset, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import "./Home.css";
+
+const GET_VOUCHERS_URL = 'http://127.0.0.1:8000/voucher/get-voucher-active/';
 
 const Home = () => {
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [newArrivals, setNewArrivals] = useState([]);
   const [testimonials, setTestimonials] = useState([]);
+  const [vouchers, setVouchers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [voucherLoading, setVoucherLoading] = useState(true);
+  const [voucherIndex, setVoucherIndex] = useState(0);
   
   // Flash Sale Countdown State
   const [timeLeft, setTimeLeft] = useState({
@@ -35,6 +36,18 @@ const Home = () => {
       console.error("Lỗi khi tải sản phẩm:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchVouchers = async () => {
+    try {
+      const response = await fetch(GET_VOUCHERS_URL);
+      const data = await response.json();
+      setVouchers(data.data || []);
+    } catch (error) {
+      console.error("Lỗi khi tải voucher:", error);
+    } finally {
+      setVoucherLoading(false);
     }
   };
 
@@ -64,7 +77,27 @@ const Home = () => {
 
   useEffect(() => {
     fetchHomeProducts();
+    fetchVouchers();
   }, []);
+
+  // Voucher Slider Functions
+  const voucherItemsPerPage = 3;
+  
+  const handleVoucherPrev = () => {
+    setVoucherIndex((prev) => 
+      prev === 0 ? Math.max(0, vouchers.length - voucherItemsPerPage) : prev - 1
+    );
+  };
+
+  const handleVoucherNext = () => {
+    setVoucherIndex((prev) => 
+      prev >= vouchers.length - voucherItemsPerPage ? 0 : prev + 1
+    );
+  };
+
+  const visibleVouchers = vouchers.slice(voucherIndex, voucherIndex + voucherItemsPerPage);
+  const canGoPrev = voucherIndex > 0;
+  const canGoNext = voucherIndex < vouchers.length - voucherItemsPerPage;
 
   return (
     <div className="homePage">
@@ -81,6 +114,61 @@ const Home = () => {
           </Link>
         </div>
       </div>
+
+      {/* ===== VOUCHER SECTION ===== */}
+      {!voucherLoading && vouchers.length > 0 && (
+        <div className="voucher-section">
+          <h2 className="section-title">🎟️ Mã Giảm Giá Hấp Dẫn</h2>
+          <p className="section-subtitle">Áp dụng ngay để nhận ưu đãi tốt nhất!</p>
+
+          <div className="voucher-slider-wrapper">
+            {/* Previous Button */}
+            {canGoPrev && (
+              <button 
+                className="voucher-nav-btn voucher-prev-btn" 
+                onClick={handleVoucherPrev}
+                aria-label="Previous vouchers"
+              >
+                <FaChevronLeft size={24} />
+              </button>
+            )}
+
+            {/* Voucher List */}
+            <div className="voucher-list-container">
+              <div className="voucher-list">
+                {visibleVouchers.map((voucher) => (
+                  <VoucherCard key={voucher.id} voucher={voucher} />
+                ))}
+              </div>
+            </div>
+
+            {/* Next Button */}
+            {canGoNext && (
+              <button 
+                className="voucher-nav-btn voucher-next-btn" 
+                onClick={handleVoucherNext}
+                aria-label="Next vouchers"
+              >
+                <FaChevronRight size={24} />
+              </button>
+            )}
+          </div>
+
+          {/* Dots Indicator */}
+          {vouchers.length > voucherItemsPerPage && (
+            <div className="voucher-dots">
+              {Array.from({ length: Math.ceil(vouchers.length / voucherItemsPerPage) }).map((_, idx) => (
+                <button
+                  key={idx}
+                  className={`voucher-dot ${Math.floor(voucherIndex / voucherItemsPerPage) === idx ? 'active' : ''}`}
+                  onClick={() => setVoucherIndex(idx * voucherItemsPerPage)}
+                  aria-label={`Go to voucher slide ${idx + 1}`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ===== WHY CHOOSE US SECTION ===== */}
       <div className="why-choose-us-section">
@@ -136,7 +224,7 @@ const Home = () => {
 
       {/* ===== FLASH SALE SECTION ===== */}
       <div className="promotions-section">
-          <h2 className="section-title">Flash Sale</h2>
+        <h2 className="section-title">Flash Sale</h2>
         {loading ? (
           <p className="loading-text">Đang tải sản phẩm flash sale...</p>
         ) : (
@@ -167,7 +255,7 @@ const Home = () => {
           </div>
         )}
         <div className="flash-sale-footer">
-          <Link to="/flash-sale">
+          <Link to="/shop">
             <button className="view-all-btn">Xem thêm</button>
           </Link>
         </div>
@@ -186,7 +274,7 @@ const Home = () => {
           </div>
         )}
         <div className="flash-sale-footer">
-          <Link to="/flash-sale">
+          <Link to="/shop">
             <button className="view-all-btn">Xem thêm</button>
           </Link>
         </div>

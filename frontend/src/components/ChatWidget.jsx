@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import { FaComments, FaTimes, FaUser } from "react-icons/fa";
 import { IoSend } from "react-icons/io5";
-import "bootstrap/dist/css/bootstrap.min.css";
 import "./ChatWidget.css";
+import axios from "axios";
 
 const ChatWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -10,8 +10,10 @@ const ChatWidget = () => {
   const [roomId, setRoomId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [inputMessage, setInputMessage] = useState("");
+  const [wsConnected, setWsConnected] = useState(false);
   const messagesEndRef = useRef(null);
-  const token = localStorage.getItem("accessToken");
+  const wsRef = useRef(null); 
+  const token = localStorage.getItem("user_accessToken");
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -20,6 +22,65 @@ const ChatWidget = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // 🔥 Kết nối WebSocket khi có roomId
+  useEffect(() => {
+    if (!roomId || !isOpen) return;
+
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const wsUrl = `${protocol}//127.0.0.1:8000/ws/chat/${roomId}/?token=${token}`;
+    
+    console.log("🔌 Connecting to WebSocket:", wsUrl);
+    
+    const ws = new WebSocket(wsUrl);
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      console.log("✅ WebSocket connected");
+      setWsConnected(true);
+    };
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      console.log("📩 Received message:", data);
+
+      const newMsg = {
+        id: Date.now() + Math.random(), // Tránh trùng ID
+        text: data.message,
+        sender: data.sender === "admin" ? "bot" : "user",
+        timestamp: data.time || new Date().toLocaleTimeString("vi-VN", {
+          hour: "2-digit",
+          minute: "2-digit"
+        })
+      };
+
+      // Chỉ thêm message nếu chưa tồn tại (tránh duplicate)
+      setMessages(prev => {
+        const exists = prev.some(msg => 
+          msg.text === newMsg.text && 
+          Math.abs(msg.id - newMsg.id) < 1000
+        );
+        return exists ? prev : [...prev, newMsg];
+      });
+    };
+
+    ws.onerror = (error) => {
+      console.error("❌ WebSocket error:", error);
+      setWsConnected(false);
+    };
+
+    ws.onclose = () => {
+      console.log("🔌 WebSocket disconnected");
+      setWsConnected(false);
+    };
+
+    // Cleanup khi unmount hoặc roomId thay đổi
+    return () => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.close();
+      }
+    };
+  }, [roomId, isOpen, token]);
 
   const loadMessages = async () => {
     try {
@@ -45,12 +106,11 @@ const ChatWidget = () => {
 
       setMessages(history);
     } catch (err) {
-      console.error("Load chat failed", err);
+      console.error("❌ Load chat failed:", err);
     } finally {
       setLoading(false);
     }
   };
-
 
   // Toggle mở widget → load tin nhắn
   const toggleChat = async () => {
@@ -59,6 +119,12 @@ const ChatWidget = () => {
 
     if (newState) {
       await loadMessages();
+    } else {
+      // Đóng WebSocket khi đóng chat
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        wsRef.current.close();
+      }
+      setWsConnected(false);
     }
   };
 
@@ -66,32 +132,44 @@ const ChatWidget = () => {
     e.preventDefault();
     if (!inputMessage.trim()) return;
 
-    const tempMsg = {
-      id: Date.now(),
-      text: inputMessage,
-      sender: "user",
-      timestamp: new Date().toLocaleTimeString("vi-VN", {
-        hour: "2-digit",
-        minute: "2-digit"
-      })
-    };
-
-    setMessages(prev => [...prev, tempMsg]);
-    const text = inputMessage;
+    const text = inputMessage.trim();
     setInputMessage("");
 
-    try {
-      await axios.post(
-        `http://127.0.0.1:8000/chat/room/${roomId}/send/`,
-        { message: text },
-        { 
-          headers: {
-            Authorization: `Bearer ${token}`
-          } 
-        }
-      );
-    } catch (err) {
-      console.error("Send failed", err);
+    // 🔥 Ưu tiên gửi qua WebSocket
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        message: text
+      }));
+      console.log("📤 Sent via WebSocket:", text);
+    } else {
+      // ⚠️ Fallback: Nếu WebSocket chưa kết nối, dùng HTTP
+      console.warn("⚠️ WebSocket not connected, using HTTP fallback");
+      
+      const tempMsg = {
+        id: Date.now(),
+        text: text,
+        sender: "user",
+        timestamp: new Date().toLocaleTimeString("vi-VN", {
+          hour: "2-digit",
+          minute: "2-digit"
+        })
+      };
+
+      setMessages(prev => [...prev, tempMsg]);
+
+      try {
+        await axios.post(
+          `http://127.0.0.1:8000/chat/room/${roomId}/send/`,
+          { message: text },
+          { 
+            headers: {
+              Authorization: `Bearer ${token}`
+            } 
+          }
+        );
+      } catch (err) {
+        console.error("❌ Send failed:", err);
+      }
     }
   };
 
@@ -150,7 +228,9 @@ const ChatWidget = () => {
               </div>
               <div>
                 <h6 className="mb-0 fw-semibold">Hỗ trợ khách hàng</h6>
-                <small>● Online</small>
+                <small>
+                  {wsConnected ? "● Online" : "○ Đang kết nối..."}
+                </small>
               </div>
             </div>
 
@@ -163,6 +243,8 @@ const ChatWidget = () => {
           <div className="chat-messages flex-grow-1 p-3 overflow-auto" style={{ background: "#f8f9fa" }}>
             {loading ? (
               <p className="text-center text-muted mt-3">Đang tải tin nhắn...</p>
+            ) : messages.length === 0 ? (
+              <p className="text-center text-muted mt-3">Chưa có tin nhắn nào</p>
             ) : (
               messages.map(msg => (
                 <div
@@ -176,7 +258,7 @@ const ChatWidget = () => {
                       background: msg.sender === "user" ? "#e70463" : "white"
                     }}
                   >
-                    <p className="mb-1">{msg.text}</p>
+                    <p className="mb-1" style={{ wordBreak: "break-word" }}>{msg.text}</p>
                     <small style={{ opacity: 0.7 }}>{msg.timestamp}</small>
                   </div>
                 </div>
@@ -194,12 +276,20 @@ const ChatWidget = () => {
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyPress={handleKeyPress}
+              disabled={!wsConnected && !roomId}
             />
 
             <button
               className="btn rounded-circle d-flex align-items-center justify-content-center"
               onClick={handleSendMessage}
-              style={{ width: "44px", height: "44px", background: "#e70463", color: "white" }}
+              disabled={!inputMessage.trim() || (!wsConnected && !roomId)}
+              style={{ 
+                width: "44px", 
+                height: "44px", 
+                background: "#e70463", 
+                color: "white",
+                opacity: (!inputMessage.trim() || (!wsConnected && !roomId)) ? 0.5 : 1
+              }}
             >
               <IoSend size={20} />
             </button>
