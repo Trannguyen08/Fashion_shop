@@ -2,15 +2,24 @@ import React, { useState, useEffect } from 'react';
 import './Checkout.css';
 import AddressService from '../../services/AddressService';
 import OrderService from '../../services/OrderService';
+import VoucherService from '../../services/VoucherService';
 import CartSummary from '../../components/CartItem/CartSummary'; 
 import { useNavigate } from 'react-router-dom'; 
 import { toast } from "react-toastify";
+import { formatDate, formatNumberSmart} from "../../utils/formatUtils";
 
 const Checkout = ({ cartItems = [], totalAmount = 0, onBack = () => {} }) => {
     const [addresses, setAddresses] = useState([]);
     const [selectedAddressId, setSelectedAddressId] = useState(null);
+    const [selectedAddress, setSelectedAddress] = useState(null);
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate(); 
+    
+    // Voucher states
+    const [vouchers, setVouchers] = useState([]);
+    const [selectedVoucher, setSelectedVoucher] = useState(null);
+    const [vouchersLoading, setVouchersLoading] = useState(false);
+    const [showVoucherModal, setShowVoucherModal] = useState(false);
     
     const [formData, setFormData] = useState({
         shippingMethod: 'standard',
@@ -23,7 +32,20 @@ const Checkout = ({ cartItems = [], totalAmount = 0, onBack = () => {} }) => {
 
     useEffect(() => {
         loadAddresses();
+        loadVouchers();
     }, []);
+
+    // Prevent body scroll when modal is open
+    useEffect(() => {
+        if (showVoucherModal) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [showVoucherModal]);
 
     const loadAddresses = async () => {
         setLoading(true);
@@ -36,13 +58,85 @@ const Checkout = ({ cartItems = [], totalAmount = 0, onBack = () => {} }) => {
             setAddresses(transformedAddresses);
             
             const defaultAddr = transformedAddresses.find(addr => addr.isDefault);
-            if (defaultAddr) {
-                setSelectedAddressId(defaultAddr.id);
-            } else if (transformedAddresses.length > 0) {
-                setSelectedAddressId(transformedAddresses[0].id);
+            const addressToSelect = defaultAddr || transformedAddresses[0];
+            
+            if (addressToSelect) {
+                setSelectedAddressId(addressToSelect.id);
+                setSelectedAddress(addressToSelect);
             }
         }
         setLoading(false);
+    };
+
+    const loadVouchers = async () => {
+        setVouchersLoading(true);
+        const result = await VoucherService.getAvailableVouchers();
+        
+        if (result.success) {
+            setVouchers(result.data);
+        } else if (result.needLogin) {
+            setVouchers([]);
+        }
+        setVouchersLoading(false);
+    };
+
+    const handleAddressChange = (e) => {
+        const addressId = parseInt(e.target.value);
+        const address = addresses.find(addr => addr.id === addressId);
+        
+        setSelectedAddressId(addressId);
+        setSelectedAddress(address);
+    };
+
+    const handleVoucherSelect = (voucher) => {
+        const orderSubTotal = cartItems.reduce((sum, item) => 
+            sum + item.quantity * (item.price || item.current_price), 0
+        );
+        
+        const validation = VoucherService.validateVoucher(voucher, orderSubTotal, cartItems);
+        
+        if (!validation.isValid) {
+            toast.warning(validation.errors[0], {
+                position: "bottom-right"
+            });
+            return;
+        }
+
+        setSelectedVoucher(voucher);
+        setShowVoucherModal(false);
+        toast.success(`Áp dụng voucher ${voucher.code} thành công!`, {
+            position: "bottom-right",
+            autoClose: 2000
+        });
+    };
+
+    const handleRemoveVoucher = () => {
+        setSelectedVoucher(null);
+        toast.info("Đã bỏ áp dụng voucher", {
+            position: "bottom-right",
+            autoClose: 2000
+        });
+    };
+
+    const calculateTotals = () => {
+        const subTotal = cartItems.reduce((sum, item) => 
+            sum + item.quantity * (item.price || item.current_price), 0
+        );
+        
+        const shippingFee = formData.shippingMethod === 'express' ? 30000 : 15000;
+        
+        const discount = selectedVoucher 
+            ? VoucherService.calculateDiscount(selectedVoucher, subTotal)
+            : 0;
+        
+        const total = subTotal + shippingFee - discount;
+        
+        return {
+            subTotal,
+            shippingFee,
+            discount,
+            total: Math.max(0, total)
+        };
     };
 
     const validateForm = () => {
@@ -62,73 +156,71 @@ const Checkout = ({ cartItems = [], totalAmount = 0, onBack = () => {} }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Validation cơ bản
         if (!validateForm()) {
-            toast.warning("Vui lòng chọn địa chỉ giao hàng!", {
-                position: "bottom-right"
-            });
+            toast.warning("Vui lòng chọn địa chỉ giao hàng!", { position: "bottom-right" });
             return;
         }
 
         if (cartItems.length === 0) {
-            toast.warning("Giỏ hàng của bạn đang trống!", {
-                position: "bottom-right"
-            });
+            toast.warning("Giỏ hàng của bạn đang trống!", { position: "bottom-right" });
             return;
         }
 
         setIsProcessing(true);
 
         try {
-            // Lấy userId
             const user = JSON.parse(localStorage.getItem("user"));
             const userId = user?.id || user?.account_id;
 
             if (!userId) {
-                toast.error("Vui lòng đăng nhập để tiếp tục!", {
-                    position: "bottom-right"
-                });
+                toast.error("Vui lòng đăng nhập để tiếp tục!", { position: "bottom-right" });
                 navigate('/login');
                 return;
             }
 
-            // Chuẩn bị data cho OrderService
+            const totals = calculateTotals();
+
             const orderPayload = {
                 address: selectedAddressId,
                 ship_method: formData.shippingMethod,
                 payment_method: formData.paymentMethod,
                 note: formData.notes || "   ",
+                voucher_id: selectedVoucher?.id || null,
                 items: cartItems.map(item => ({
                     product_variant: item.product_variant_id,
                     quantity: item.quantity,
                     price: item.price || item.current_price
                 }))
             };
-            console.log('📝 Order payload:', orderPayload);
 
-            // Validate data
             const validation = OrderService.validateOrderData(orderPayload);
             if (!validation.isValid) {
-                toast.error(validation.errors[0], {
-                    position: "bottom-right"
-                });
+                toast.error(validation.errors[0], { position: "bottom-right" });
                 setIsProcessing(false);
                 return;
             }
 
-            // Gọi API tạo đơn hàng
             const result = await OrderService.createOrder(orderPayload);
 
             if (result.success) {
-                toast.success(result.message || "Đặt hàng thành công!", {
-                    position: "bottom-right",
-                    autoClose: 2000
-                });
+                if (formData.paymentMethod === 'bank') {
+                    const paymentResult = await OrderService.createVnpayPayment({
+                        order_id: result.data.order_id,
+                        amount: totals.total
+                    });
+
+                    if (paymentResult.success && paymentResult.payment_url) {
+                        window.location.href = paymentResult.payment_url;
+                        return;
+                    } else {
+                        toast.error(paymentResult.error || "Không thể tạo payment VNPAY", { position: "bottom-right" });
+                        setIsProcessing(false);
+                        return;
+                    }
+                }
 
                 localStorage.removeItem('cart');
 
-                const selectedAddress = addresses.find(addr => addr.id === selectedAddressId);
-                const shippingFee = formData.shippingMethod === 'express' ? 30000 : 15000;
                 const getEstimatedDeliveryDate = (method) => {
                     const days = method === 'express' ? 2 : 5;
                     const date = new Date();
@@ -136,69 +228,53 @@ const Checkout = ({ cartItems = [], totalAmount = 0, onBack = () => {} }) => {
                     return date.toLocaleDateString('vi-VN'); 
                 };
 
-                const calculatedSubTotal = cartItems.reduce((sum, item) => 
-                    sum + item.quantity * (item.price || item.current_price), 0
-                );
-
                 navigate('/order-success', {
                     state: { 
                         orderDetails: {
                             orderId: result.data.order_id,
                             message: result.data.message,
-                            subTotal: calculatedSubTotal, 
-                            shippingFee: shippingFee,
+                            subTotal: totals.subTotal,
+                            shippingFee: totals.shippingFee,
+                            discount: totals.discount,
+                            voucherCode: selectedVoucher?.code || null,
                             items: cartItems,
                             status: 'Chờ xác nhận',
-                            paymentMethod: formData.paymentMethod === 'cod' ? 'Thanh toán khi nhận hàng' : 'Chuyển khoản ngân hàng',
-                            shippingMethod: formData.shippingMethod === 'express' ? 'Giao hàng nhanh' : 'Giao hàng tiêu chuẩn',
+                            paymentMethod: 'Thanh toán khi nhận hàng',
+                            shippingMethod: formData.shippingMethod === 'express' 
+                                ? 'Giao hàng nhanh' 
+                                : 'Giao hàng tiêu chuẩn',
                             notes: formData.notes,
-
-                            // SỬA ĐỔI 2: Thêm các trường bị thiếu/sai tên
                             recipientName: selectedAddress.recipientName,
                             recipientPhone: selectedAddress.recipientPhone,
-                            // SỬA ĐỔI 3: Gửi đi chuỗi địa chỉ đầy đủ
                             addressFullText: `${selectedAddress.address}, ${selectedAddress.ward}, ${selectedAddress.district}, ${selectedAddress.province}`,
-                            orderDate: new Date().toLocaleDateString('vi-VN'), // Thêm ngày đặt hàng
-                            estimatedDelivery: getEstimatedDeliveryDate(formData.shippingMethod) // Thêm ngày dự kiến
+                            orderDate: new Date().toLocaleDateString('vi-VN'),
+                            estimatedDelivery: getEstimatedDeliveryDate(formData.shippingMethod)
                         }
                     }
                 });
 
             } else {
-                // Thất bại
-                toast.error(result.error || "Không thể tạo đơn hàng!", {
-                    position: "bottom-right",
-                    autoClose: 5000
-                });
-
-                // Nếu cần login lại
+                toast.error(result.error || "Không thể tạo đơn hàng!", { position: "bottom-right" });
                 if (result.needLogin) {
-                    setTimeout(() => {
-                        navigate('/login');
-                    }, 2000);
+                    setTimeout(() => navigate('/login'), 2000);
                 }
             }
 
         } catch (error) {
             console.error("Unexpected error:", error);
-            toast.error("Đã có lỗi xảy ra!", {
-                position: "bottom-right"
-            });
+            toast.error("Đã có lỗi xảy ra!", { position: "bottom-right" });
         } finally {
             setIsProcessing(false);
         }
     };
 
-    // Tính shipping fee
-    const getShippingFee = () => {
-        return formData.shippingMethod === 'express' ? 30000 : 15000;
-    };
+    const totals = calculateTotals();
 
     return (
         <div className="checkout-container">
             <div className="checkout-main">
                 <div className="checkout-form-section">
-                    <form onSubmit={handleSubmit} className="checkout-form">
+                    <div className="checkout-form">
                         
                         {/* Địa chỉ giao hàng */}
                         <div className="form-section">
@@ -206,39 +282,46 @@ const Checkout = ({ cartItems = [], totalAmount = 0, onBack = () => {} }) => {
                             {loading ? (
                                 <p className="loading-text">Đang tải địa chỉ...</p>
                             ) : addresses.length > 0 ? (
-                                <div className="address-selection">
-                                    {addresses.map((address) => (
-                                        <label 
-                                            key={address.id} 
-                                            className={`address-option ${selectedAddressId === address.id ? 'selected' : ''}`}
-                                        >
-                                            <input
-                                                type="radio"
-                                                name="selectedAddress"
-                                                value={address.id}
-                                                checked={selectedAddressId === address.id}
-                                                onChange={() => setSelectedAddressId(address.id)}
-                                            />
-                                            <div className="address-content">
-                                                <div className="address-header-row">
-                                                    <strong className="address-name">
-                                                        {address.recipientName}
-                                                    </strong>
-                                                    {address.isDefault && (
-                                                        <span className="default-badge">Mặc định</span>
-                                                    )}
-                                                </div>
-                                                <p className="address-phone">
-                                                    {address.recipientPhone}
-                                                </p>
-                                                <p className="address-detail">
-                                                    {address.address && `${address.address}, `}
-                                                    {address.ward && `${address.ward}, `}
-                                                    {address.district}, {address.province}
-                                                </p>
-                                            </div>
+                                <div className="address-selection-wrapper">
+                                    <div className="address-select-group">
+                                        <label htmlFor="addressSelect" className="select-label">
+                                            Chọn địa chỉ giao hàng
                                         </label>
-                                    ))}
+                                        <select
+                                            id="addressSelect"
+                                            className="address-select"
+                                            value={selectedAddressId || ''}
+                                            onChange={handleAddressChange}
+                                        >
+                                            {addresses.map(addr => (
+                                                <option key={addr.id} value={addr.id}>
+                                                    {addr.recipientName} - {addr.recipientPhone}
+                                                    {addr.isDefault ? ' (Mặc định)' : ''}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {selectedAddress && (
+                                        <div className="address-detail-card">
+                                            <div className="address-detail-header">
+                                                <strong className="address-name">
+                                                    {selectedAddress.recipientName}
+                                                </strong>
+                                                {selectedAddress.isDefault && (
+                                                    <span className="default-badge">Mặc định</span>
+                                                )}
+                                            </div>
+                                            <p className="address-phone">
+                                                📞 {selectedAddress.recipientPhone}
+                                            </p>
+                                            <p className="address-full">
+                                                📍 {selectedAddress.address && `${selectedAddress.address}, `}
+                                                {selectedAddress.ward && `${selectedAddress.ward}, `}
+                                                {selectedAddress.district}, {selectedAddress.province}
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             ) : (
                                 <div className="empty-address">
@@ -254,6 +337,62 @@ const Checkout = ({ cartItems = [], totalAmount = 0, onBack = () => {} }) => {
                             )}
                             {errors.address && (
                                 <span className="error-text">{errors.address}</span>
+                            )}
+                        </div>
+
+                        {/* Voucher Section */}
+                        <div className="form-section">
+                            <h2 className="section-title">Mã giảm giá</h2>
+                            {vouchersLoading ? (
+                                <p className="loading-text">Đang tải voucher...</p>
+                            ) : vouchers.length > 0 ? (
+                                <div className="voucher-selection-wrapper">
+                                    {selectedVoucher ? (
+                                        <div className="selected-voucher-card">
+                                            <div className="voucher-header">
+                                                <div className="voucher-icon">🎟️</div>
+                                                <div className="voucher-info">
+                                                    <strong className="voucher-code">{selectedVoucher.code}</strong>
+                                                    <span className="voucher-desc">
+                                                        Giảm {selectedVoucher.discount_type === 'percent' 
+                                                            ? `${selectedVoucher.discount_value}%` 
+                                                            : VoucherService.formatCurrency(selectedVoucher.discount_value)}
+                                                    </span>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    className="btn-remove-voucher"
+                                                    onClick={handleRemoveVoucher}
+                                                    title="Bỏ áp dụng voucher"
+                                                >
+                                                    ✕
+                                                </button>
+                                            </div>
+                                            <div className="voucher-discount-info">
+                                                💰 Bạn được giảm: {VoucherService.formatCurrency(totals.discount)}
+                                            </div>
+                                            <button
+                                                type="button"
+                                                className="btn-change-voucher"
+                                                onClick={() => setShowVoucherModal(true)}
+                                            >
+                                                Đổi voucher khác
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            className="btn-select-voucher"
+                                            onClick={() => setShowVoucherModal(true)}
+                                        >
+                                            🎟️ Chọn voucher ({vouchers.length} khả dụng)
+                                        </button>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="empty-voucher">
+                                    <p>Không có voucher khả dụng</p>
+                                </div>
                             )}
                         </div>
 
@@ -345,7 +484,8 @@ const Checkout = ({ cartItems = [], totalAmount = 0, onBack = () => {} }) => {
                         </div>
 
                         <button 
-                            type="submit" 
+                            type="button"
+                            onClick={handleSubmit}
                             className="btn-submit"
                             disabled={isProcessing || loading || cartItems.length === 0 || !selectedAddressId}
                         >
@@ -358,19 +498,82 @@ const Checkout = ({ cartItems = [], totalAmount = 0, onBack = () => {} }) => {
                                 'Xác nhận đặt hàng'
                             )}
                         </button>
-                    </form>
+                    </div>
                 </div>
 
                 <div className="checkout-summary-section">
                     <CartSummary
                         items={cartItems}         
-                        totalAmount={totalAmount} 
+                        totalAmount={totals.total}
                         itemCount={cartItems.length}
                         isCheckout={true}
-                        shippingFee={getShippingFee()}
+                        shippingFee={totals.shippingFee}
+                        voucherDiscount={totals.discount}
                     />
                 </div>
             </div>
+
+            {/* Voucher Modal */}
+            {showVoucherModal && (
+                <div className="modal-overlay" onClick={() => setShowVoucherModal(false)}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3 className="modal-title">Chọn Voucher</h3>
+                            <button 
+                                className="modal-close"
+                                onClick={() => setShowVoucherModal(false)}
+                            >
+                                ✕
+                            </button>
+                        </div>
+                        <div className="modal-body">
+                            <div className="voucher-list-modal">
+                                {vouchers.map(voucher => {
+                                    const validation = VoucherService.validateVoucher(
+                                        voucher, 
+                                        totals.subTotal, 
+                                        cartItems
+                                    );
+                                    const isValid = validation.isValid;
+
+                                    return (
+                                        <div 
+                                            key={voucher.id} 
+                                            className={`voucher-item-modal ${!isValid ? 'disabled' : ''} ${selectedVoucher?.id === voucher.id ? 'selected' : ''}`}
+                                            onClick={() => isValid && handleVoucherSelect(voucher)}
+                                        >
+                                            <div className="voucher-item-header">
+                                                <div className="voucher-icon-small">🎟️</div>
+                                                <div className="voucher-item-info">
+                                                    <strong>{voucher.code}</strong>
+                                                    <span className="voucher-value">
+                                                        Giảm {voucher.discount_type === 'percent' 
+                                                            ? `${formatNumberSmart(voucher.discount_value)}%` 
+                                                            : formatNumberSmart(voucher.discount_value)}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div className="voucher-item-details">
+                                                <div className="voucher-condition">
+                                                    Đơn tối thiểu: {VoucherService.formatCurrency(voucher.min_order_amount)}
+                                                </div>
+                                                <div className="voucher-expiry">
+                                                    HSD: {formatDate(voucher.end_date)}
+                                                </div>
+                                                {!isValid && (
+                                                    <div className="voucher-error">
+                                                        ⚠️ {validation.errors[0]}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

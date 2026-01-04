@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views
+from customers.client_views import views
 
 urlpatterns = [
     path('address/add/<int:account_id>/', views.add_address),

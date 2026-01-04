@@ -2,6 +2,7 @@
 import axios from 'axios';
 
 const API_BASE_URL = 'http://127.0.0.1:8000/account'; // URL backend user
+const token = localStorage.getItem('user_accessToken');
 
 class UserService {
   // Lấy userId từ localStorage
@@ -14,7 +15,14 @@ class UserService {
   async getUserInfo(userId = null) {
     try {
       const id = userId || this.getUserId();
-      const response = await axios.get(`${API_BASE_URL}/info/${id}/`);
+      const response = await axios.get(`${API_BASE_URL}/info/${id}/`, 
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+      console.log('Fetched user info:', response.data.user);
       return {
         success: true,
         data: response.data.user
@@ -38,6 +46,11 @@ class UserService {
           full_name: userData.fullName,
           email: userData.email,
           phone: userData.phone
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
         }
       );
 

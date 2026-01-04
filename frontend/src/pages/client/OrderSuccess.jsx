@@ -13,11 +13,10 @@ import {
 
 const OrderSuccess = ({ onContinueShopping }) => {
     const location = useLocation();
-    const orderDetails = location.state?.orderDetails || {};
+    const initialOrderDetails = location.state?.orderDetails || {};
+    const [orderDetails, setOrderDetails] = useState(initialOrderDetails);
+    const [paymentStatus, setPaymentStatus] = useState(initialOrderDetails.paymentStatus || 'PENDING');
     const items = orderDetails.items || [];
-
-    console.log("Order Details:", orderDetails);
-    console.log("Purchased Items:", items);
 
     const formatCurrency = (amount) => {
         return new Intl.NumberFormat("vi-VN", {
@@ -27,6 +26,29 @@ const OrderSuccess = ({ onContinueShopping }) => {
     };
 
     const isValidOrder = !!orderDetails.orderId;
+
+    useEffect(() => {
+        if (!orderDetails.orderId) return;
+
+        const fetchPaymentStatus = async () => {
+            try {
+                const response = await axios.get(
+                    `http://127.0.0.1:8000/order/get-order-payment/${orderDetails.orderId}/`
+                );
+                if (response.data) {
+                    setPaymentStatus(response.data.payment_status);
+                    setOrderDetails(prev => ({
+                        ...prev,
+                        status: response.data.order_status
+                    }));
+                }
+            } catch (error) {
+                console.error("Failed to fetch payment status:", error);
+            }
+        };
+
+        fetchPaymentStatus();
+    }, [orderDetails.orderId]);
 
     if (!isValidOrder) {
         return (
@@ -141,6 +163,13 @@ const OrderSuccess = ({ onContinueShopping }) => {
                                 <strong>Trạng thái:</strong>{" "}
                                 <span className="badge bg-warning text-dark">
                                     {order.status}
+                                </span>
+                            </p>
+
+                            <p>
+                                <strong>Thanh toán:</strong>{" "}
+                                <span className="badge bg-success text-dark">
+                                    {paymentStatus}
                                 </span>
                             </p>
 

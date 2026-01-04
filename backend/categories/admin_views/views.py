@@ -2,32 +2,24 @@ from django.core.cache import cache
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAdminUser
 from categories.models import Category
 from categories.serializers import CategorySerializer
 from utils.delete_cache import delete_product_cache
 
-@csrf_exempt
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([IsAdminUser])
 def get_all_category(request):
-    CACHE_KEY = "all_categories"
-    cached_data = cache.get(CACHE_KEY)
-    if cached_data:
-        return JsonResponse({"categories": cached_data}, status=200)
-
     category = Category.objects.all()
-    if not category.exists():
-        return JsonResponse({"message": "Danh sách danh mục trống"}, status=400)
-
     data = CategorySerializer(category, many=True).data
-    cache.set(CACHE_KEY, data, timeout=86400)
-    return JsonResponse({"categories": data}, status=200)
+    return JsonResponse({
+        "success": True,
+        "data": data},
+    status=200)
 
 
-@csrf_exempt
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([IsAdminUser])
 def add_category(request):
     try:
         data = request.data
@@ -50,9 +42,9 @@ def add_category(request):
     except Exception as e:
         return JsonResponse({"error": str(e)},status=500)
 
-@csrf_exempt
+
 @api_view(['PUT'])
-@permission_classes([AllowAny])
+@permission_classes([IsAdminUser])
 def update_category(request, category_id):
     try:
         data = request.data
@@ -79,19 +71,4 @@ def update_category(request, category_id):
         return JsonResponse({"error": str(e)}, status=500)
 
 
-@csrf_exempt
-@api_view(['DELETE'])
-@permission_classes([AllowAny])
-def delete_category(request, category_id):
-    try:
-        category = Category.objects.filter(id=category_id).first()
-        if not category:
-            return JsonResponse({"error": "Category not found."}, status=404)
 
-        category.delete()
-        cache.delete("all_categories")
-        delete_product_cache()
-
-        return JsonResponse({"message": "Category deleted successfully."}, status=200)
-    except Exception as e:
-        return JsonResponse({"error": str(e)}, status=500)

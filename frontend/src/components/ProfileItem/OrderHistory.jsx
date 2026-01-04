@@ -36,7 +36,7 @@ const OrderHistory = ({ orders, setOrders }) => {
             comment: comment
         };
 
-        const token = localStorage.getItem('accessToken');
+        const token = localStorage.getItem('user_accessToken');
 
         try {
             const response = await axios.post(

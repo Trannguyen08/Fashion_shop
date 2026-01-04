@@ -11,7 +11,6 @@
   padding: 20px 0;
 }
 
-
 /* Main Layout */
 .checkout-main {
   max-width: 1400px;
@@ -215,7 +214,6 @@
   flex: 2;
 }
 
-
 .checkout-summary {
   background: white;
   border: 1px solid #f0f0f0;
@@ -263,11 +261,11 @@
 .item-details-row {
     display: flex;
     align-items: center;
-    flex-grow: 1; /* Cho phép nó mở rộng */
+    flex-grow: 1;
 }
 
 .item-thumbnail {
-    width: 50px; /* Kích thước ảnh nhỏ */
+    width: 50px;
     height: 50px;
     object-fit: cover;
     border-radius: 4px;
@@ -424,202 +422,477 @@
   transform: translateY(-2px);
 }
 
-/* Responsive */
-@media (max-width: 1024px) {
-  .checkout-main {
-    grid-template-columns: 1fr;
-  }
-
-  .checkout-summary-section {
-    position: static;
-  }
-
-  .form-row {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 768px) {
-  .checkout-header {
+/* ====== ADDRESS SECTION STYLES ====== */
+.address-selection-wrapper {
+    display: flex;
     flex-direction: column;
-    align-items: flex-start;
-    margin-bottom: 20px;
-  }
-
-  .checkout-form-section {
-    padding: 20px;
-  }
-
-  .checkout-summary {
-    margin-top: 20px;
-  }
-
-  .radio-option {
-    flex-wrap: wrap;
-  }
-
-  .radio-price {
-    width: 100%;
-    text-align: right;
-    margin-top: 5px;
-  }
-
-  .summary-items {
-    max-height: 200px;
-  }
+    gap: 15px;
 }
 
-@media (max-width: 480px) {
-  .checkout-container {
-    padding: 10px 0;
-  }
+.address-select-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
 
-  .checkout-form-section {
-    padding: 15px;
-  }
-
-  .checkout-header {
-    padding: 0 15px;
-  }
-
-  .checkout-main {
-    padding: 0 15px;
-    gap: 20px;
-  }
-
-  .form-section {
-    gap: 12px;
-  }
-
-  .form-group input,
-  .form-group select {
-    font-size: 16px;
-  }
-
-  .btn-submit {
-    padding: 12px 20px;
+.select-label {
     font-size: 14px;
-  }
-
-  .checkout-success {
-    margin: 40px 15px;
-    padding: 25px;
-  }
-
-  .success-icon {
-    width: 60px;
-    height: 60px;
-    font-size: 36px;
-    margin-bottom: 15px;
-  }
-
-  .checkout-success h2 {
-    font-size: 18px;
-  }
+    font-weight: 600;
+    color: #333;
 }
 
-/* Address Selection */
-.address-selection {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.address-select {
+    padding: 12px;
+    font-size: 14px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
 }
 
-.address-option {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 15px;
-  border: 2px solid #e0e0e0;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  background-color: white;
+.address-select:hover {
+    border-color: #e70463;
 }
 
-.address-option:hover {
-  border-color: #e70463;
-  background-color: #fff5f9;
+.address-select:focus {
+    outline: none;
+    border-color: #e70463;
+    box-shadow: 0 0 0 3px rgba(231, 4, 99, 0.1);
 }
 
-.address-option.selected {
-  border-color: #e70463;
-  background-color: #fff5f9;
+.address-detail-card {
+    background: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 15px;
+    margin-top: 8px;
 }
 
-.address-option input[type="radio"] {
-  width: 18px;
-  height: 18px;
-  margin-top: 2px;
-  cursor: pointer;
-  accent-color: #e70463;
-  flex-shrink: 0;
-}
-
-.address-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0px;
-}
-
-.address-header-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 4px;
+.address-detail-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
 }
 
 .address-name {
-  font-size: 15px;
-  font-weight: 600;
-  color: #333;
-}
-
-.default-badge {
-  display: inline-block;
-  padding: 2px 8px;
-  background-color: #e70463;
-  color: white;
-  font-size: 11px;
-  font-weight: 600;
-  border-radius: 3px;
-  text-transform: uppercase;
+    font-size: 15px;
+    color: #333;
+    font-weight: 600;
 }
 
 .address-phone {
-  font-size: 13px;
-  font-weight: 600 !important;
-  color: #333 !important;
-  margin: 0 !important;
-  margin-bottom: 10px !important;
+    font-size: 13px;
+    font-weight: 600 !important;
+    color: #333 !important;
+    margin: 0 !important;
+    margin-bottom: 10px !important;
 }
 
-.address-detail {
-  font-size: 13px;
-  font-weight: 600;
-  color: #333 !important;
-  margin: 0;
-  line-height: 1.4;
+.address-full {
+    font-size: 13px;
+    font-weight: 600;
+    color: #333 !important;
+    line-height: 1.4;
+    margin: 0;
 }
 
-.empty-address {
-  text-align: center;
-  padding: 30px 20px;
-  background-color: #f9f9f9;
-  border-radius: 6px;
-  border: 1px dashed #ddd;
+.default-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    background-color: #e70463;
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 3px;
+    text-transform: uppercase;
 }
 
-.empty-address p {
-  font-size: 14px;
-  color: #666;
-  margin: 5px 0;
+/* ====== VOUCHER SECTION STYLES ====== */
+.voucher-selection-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
+.btn-select-voucher {
+    padding: 15px;
+    background: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #e70463;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+}
+
+.btn-select-voucher:hover {
+    border-color: #e70463;
+    background-color: #fff5f9;
+    transform: translateY(-2px);
+}
+
+.selected-voucher-card {
+    background: #fff5f9;
+    border: 2px solid #e70463;
+    border-radius: 6px;
+    padding: 15px;
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.voucher-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.voucher-icon {
+    font-size: 2rem;
+    flex-shrink: 0;
+}
+
+.voucher-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.voucher-code {
+    font-size: 15px;
+    color: #e70463;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.voucher-desc {
+    font-size: 13px;
+    color: #666;
+}
+
+.btn-remove-voucher {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #f44336;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.btn-remove-voucher:hover {
+    background: #d32f2f;
+    transform: rotate(90deg) scale(1.1);
+}
+
+.voucher-discount-info {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed #e0e0e0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #4caf50;
+}
+
+.btn-change-voucher {
+    margin-top: 8px;
+    padding: 8px 15px;
+    background: white;
+    border: 1px solid #e70463;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #e70463;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: 100%;
+}
+
+.btn-change-voucher:hover {
+    background: #e70463;
+    color: white;
+}
+
+/* ====== MODAL STYLES ====== */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.modal-content {
+    background: white;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 600px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.modal-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #333;
+    margin: 0;
+}
+
+.modal-close {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #f5f5f5;
+    border: none;
+    font-size: 20px;
+    color: #666;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+    background: #e70463;
+    color: white;
+    transform: rotate(90deg);
+}
+
+.modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 24px;
+}
+
+.modal-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+    background: #f0f0f0;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+    background: #e70463;
+    border-radius: 4px;
+}
+
+.voucher-list-modal {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.voucher-item-modal {
+    background: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.voucher-item-modal:hover:not(.disabled) {
+    border-color: #e70463;
+    background-color: #fff5f9;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(231, 4, 99, 0.2);
+}
+
+.voucher-item-modal.selected {
+    border-color: #e70463;
+    background-color: #fff5f9;
+    box-shadow: 0 0 0 3px rgba(231, 4, 99, 0.1);
+}
+
+.voucher-item-modal.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #f5f5f5;
+}
+
+.voucher-item-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.voucher-icon-small {
+    font-size: 1.8rem;
+}
+
+.voucher-item-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.voucher-item-info strong {
+    font-size: 15px;
+    color: #e70463;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.voucher-value {
+    font-size: 13px;
+    color: #4caf50;
+    font-weight: 600;
+}
+
+.voucher-item-details {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-top: 10px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.voucher-condition,
+.voucher-expiry {
+    font-size: 12px;
+    color: #666;
+}
+
+.voucher-error {
+    font-size: 12px;
+    color: #f44336;
+    font-weight: 500;
+    margin-top: 4px;
+}
+
+/* Empty States */
+.empty-address,
+.empty-voucher {
+    text-align: center;
+    padding: 30px 20px;
+    background-color: #f9f9f9;
+    border-radius: 6px;
+    border: 1px dashed #ddd;
+}
+
+.empty-address p,
+.empty-voucher p {
+    font-size: 14px;
+    color: #666;
+    margin: 5px 0;
+}
+
+.btn-add-address {
+    padding: 12px 30px;
+    background-color: #e70463;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 10px;
+}
+
+.btn-add-address:hover {
+    background-color: #c9034f;
+    transform: translateY(-2px);
+}
+
+/* Loading States */
 .loading-text {
-  text-align: center;
-  padding: 20px;
-  color: #999;
-  font-size: 14px;
+    text-align: center;
+    padding: 20px;
+    color: #999;
+    font-size: 14px;
 }
+
+/* Button States */
+.btn-submit:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.btn-submit:disabled:hover {
+    background-color: #ccc;
+    transform: none;
+    box-shadow: none;
+}
+
+.spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    margin-right: 8px;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+

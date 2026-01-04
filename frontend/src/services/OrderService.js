@@ -3,12 +3,21 @@ import axios from 'axios';
 const API_BASE_URL = 'http://127.0.0.1:8000';
 
 class OrderService {
+    static async createVnpayPayment({ order_id, amount }){
+        try {
+            const res = await axios.post(`${API_BASE_URL}/payment/create/`, { order_id, amount });
+            return res.data;
+        } catch (error) {
+            console.error(error);
+            return { success: false, error: "Lỗi kết nối server" };
+        }
+    };
     /**
      * Tạo đơn hàng mới
      */
     static async createOrder(orderData) {
         try {
-            const token = localStorage.getItem('accessToken');
+            const token = localStorage.getItem('user_accessToken');
             
             if (!token) {
                 return {
@@ -103,7 +112,7 @@ class OrderService {
 
     static async cancelOrder(orderId, reason = '') {
         try {
-            const token = localStorage.getItem('accessToken');
+            const token = localStorage.getItem('user_accessToken');
             
             if (!token) {
                 return {
@@ -165,7 +174,7 @@ class OrderService {
      */
     static async getUserOrders() {
         try {
-            const token = localStorage.getItem('accessToken');
+            const token = localStorage.getItem('user_accessToken');
 
             if (!token) {
                 return {
@@ -201,7 +210,7 @@ class OrderService {
      */
     static async getOrderDetail(orderId) {
         try {
-            const token = localStorage.getItem('accessToken');
+            const token = localStorage.getItem('user_accessToken');
             
             if (!token) {
                 return {

@@ -1,21 +1,23 @@
 import React from 'react';
 import './CartSummary.css';
 
-// Đã đổi tên selectedItems thành items
 const CartSummary = ({ 
     items = [], 
     totalAmount = 0, 
     itemCount = 0, 
     onCheckout,
     isCheckout = false,
-    shippingFee = 0
+    shippingFee = 0,
+    discount = 0,
+    voucherCode = null
 }) => {
     // Safety check
     const validItems = Array.isArray(items) ? items : [];
     const total = typeof totalAmount === 'number' ? totalAmount : 0;
     const count = typeof itemCount === 'number' ? itemCount : 0;
 
-    const finalTotal = total + shippingFee;
+    // Tính tổng cuối cùng (đã bao gồm discount trong totalAmount từ Checkout)
+    const finalTotal = isCheckout ? total : (total + shippingFee);
 
     return (
         <div className="cart-summary">
@@ -73,19 +75,29 @@ const CartSummary = ({
                     <div className="summary-info">
                         <div className="summary-row">
                             <span className="summary-label">Tạm tính:</span>
-                            <span className="summary-value">{total.toLocaleString('vi-VN')}₫</span>
+                            <span className="summary-value">
+                                {(total - shippingFee + (discount || 0)).toLocaleString('vi-VN')}₫
+                            </span>
                         </div>
+                        
                         <div className="summary-row">
                             <span className="summary-label">Vận chuyển:</span>
-                            {/* Chỉ hiển thị chi phí vận chuyển cố định nếu ở Checkout */}
                             <span className="summary-value summary-shipping">
                                 {isCheckout ? shippingFee.toLocaleString('vi-VN') + '₫' : 'Tính sau'} 
                             </span>
                         </div>
-                        <div className="summary-row">
-                            <span className="summary-label">Giảm giá:</span>
-                            <span className="summary-value">0₫</span>
-                        </div>
+                        
+                        {/* Hiển thị voucher discount nếu có */}
+                        {isCheckout && discount > 0 && (
+                            <div className="summary-row summary-discount-row">
+                                <span className="summary-label">
+                                    Giảm giá {voucherCode && `(${voucherCode})`}:
+                                </span>
+                                <span className="summary-value summary-discount">
+                                    -{discount.toLocaleString('vi-VN')}₫
+                                </span>
+                            </div>
+                        )}
                     </div>
 
                     <div className="summary-divider"></div>

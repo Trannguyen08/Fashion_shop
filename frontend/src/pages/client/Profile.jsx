@@ -82,7 +82,7 @@ const Profile = () => {
           const userData = result.data;
           setUser(userData);
           setFormData({
-            fullName: userData.full_name || "",
+            fullName: userData.full_name || " ",
             email: userData.email || "",
             phone: userData.phone || "",
           });
@@ -457,7 +457,7 @@ const Profile = () => {
       return;
     }
 
-    const token = localStorage.getItem('accessToken');
+    const token = localStorage.getItem('user_accessToken');
 
     try {
       const res = await axios.put(
@@ -487,7 +487,7 @@ const Profile = () => {
   // ========== LOGOUT ==========
   const handleLogout = () => {
     localStorage.removeItem("user");
-    navigate("/login");
+    navigate("/");
   };
 
   if (!user) {

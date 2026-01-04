@@ -3,7 +3,7 @@ import { PlusCircle, XCircle, Trash2 } from 'lucide-react';
 import axios from "axios";
 import './ProductFormModal.css';
 
-const SIZES = ['S', 'M', 'L', 'XL', 'Free Size'];
+const SIZES = ['S', 'M', 'L', 'XL', 'XXL'];
 const COLORS = ['Đen', 'Trắng', 'Đỏ', 'Xanh navy'];
 
 const defaultProductState = {
@@ -22,6 +22,7 @@ const defaultProductState = {
 
 const API_BASE_URL = "http://127.0.0.1:8000/api/product";
 const API_CATEGORY_URL = "http://127.0.0.1:8000/api/category/all-category/";
+const token = localStorage.getItem('admin_accessToken');
 
 const ProductFormModal = ({ show, handleClose, productData, handleSave }) => {
     const [formData, setFormData] = useState(defaultProductState);
@@ -32,8 +33,10 @@ const ProductFormModal = ({ show, handleClose, productData, handleSave }) => {
     useEffect(() => {
         const fetchCategories = async () => {
             try {
-                const res = await axios.get(API_CATEGORY_URL);
-                const data = res.data.categories || [];
+                const res = await axios.get(API_CATEGORY_URL, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = res.data.data || [];
                 setCategories(data);
 
                 // Khi thêm mới → auto chọn category đầu tiên
@@ -48,10 +51,11 @@ const ProductFormModal = ({ show, handleClose, productData, handleSave }) => {
         fetchCategories();
     }, [isEditMode]);
 
-    // 🔥 useEffect riêng để set formData khi edit và categories đã load
+    // useEffect riêng để set formData khi edit và categories đã load
     useEffect(() => {
-        if (isEditMode && productData && categories.length > 0) {
+        if (show && isEditMode && categories.length > 0) {
             console.log("Setting edit mode data:", productData);
+            console.log("Categories:", categories);
 
             // Related Images
             const relatedImages = (productData.product_imgs || []).map(img => ({
@@ -64,31 +68,31 @@ const ProductFormModal = ({ show, handleClose, productData, handleSave }) => {
                 size: v.size || SIZES[0],
                 color: v.color || COLORS[0],
                 sku: v.sku || '',
-                stock: String(v.stock_quantity || 0),  // 🔥 Đổi từ stock
+                stock: String(v.stock || 0),
                 status: v.status || 'Active',
                 image: v.PV_img ? { file: null, url: v.PV_img } : null
             }));
 
-            // 🔥 Tìm category_id từ category_name
+            // Tìm category_id
             const categoryId = categories.find(cat => cat.name === productData.category_name)?.id 
                             || productData.category_id 
                             || categories[0]?.id;
 
-            // 🔥 Xử lý giá KM: nếu = 0 hoặc null thì để rỗng
+            // Xử lý giá KM
             const salePrice = productData.current_price && productData.current_price > 0 
                 ? String(productData.current_price) 
                 : '';
 
             const newFormData = {
                 name: productData.name || '',
-                category: categoryId,  // 🔥 Dùng categoryId tìm được
+                category: categoryId, 
                 basePrice: String(productData.old_price || 0),
                 salePrice: salePrice,
                 description: productData.description || '',
                 status: productData.status || 'Active',
-                isNew: productData.is_new || false,  // 🔥 Đổi từ isNew
-                isFeatured: productData.is_featured || false,  // 🔥 Đổi từ isFeatured
-                mainImage: productData.product_img ? { file: null, url: productData.product_img } : null,  // 🔥 Đổi từ mainImage
+                isNew: productData.is_new || false,
+                isFeatured: productData.is_featured || false, 
+                mainImage: productData.product_img ? { file: null, url: productData.product_img } : null,
                 relatedImages: relatedImages,
                 variants: variants.length > 0 ? variants : [{ 
                     size: SIZES[0], 
@@ -102,15 +106,17 @@ const ProductFormModal = ({ show, handleClose, productData, handleSave }) => {
 
             console.log("Final formData:", newFormData);
             setFormData(newFormData);
+        } else if (show && !isEditMode) {
+            // Thêm mới - reset về default
+            console.log("Add new mode - resetting form");
+            setFormData({
+                ...defaultProductState,
+                category: categories.length > 0 ? categories[0].id : ''
+            });
         }
-    }, [isEditMode, productData, categories]);
+    }, [show, isEditMode, productData, categories]);
 
-    // 🔥 Reset form khi đóng modal
-    useEffect(() => {
-        if (!show) {
-            setFormData(defaultProductState);
-        }
-    }, [show]);
+    
 
     const handleChange = (e) => setFormData({ ...formData, [e.target.id]: e.target.value });
     
@@ -222,7 +228,7 @@ const ProductFormModal = ({ show, handleClose, productData, handleSave }) => {
             method,
             url,
             data: fd,
-            headers: { "Content-Type": "multipart/form-data" }
+            headers: { 'Authorization': `Bearer ${token}` }
         });
 
         return res.data;

@@ -1,21 +1,19 @@
 import React, { useState, useRef, useEffect } from "react";
 import { FaComments, FaTimes, FaUser } from "react-icons/fa";
 import { IoSend } from "react-icons/io5";
-import "bootstrap/dist/css/bootstrap.min.css";
 import "./ChatWidget.css";
+import axios from "axios";
 
 const ChatWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      text: "Xin chào! Chúng tôi có thể giúp gì cho bạn?",
-      sender: "bot",
-      timestamp: new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })
-    }
-  ]);
+  const [messages, setMessages] = useState([]);
+  const [roomId, setRoomId] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [inputMessage, setInputMessage] = useState("");
+  const [wsConnected, setWsConnected] = useState(false);
   const messagesEndRef = useRef(null);
+  const wsRef = useRef(null); 
+  const token = localStorage.getItem("user_accessToken");
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -25,72 +23,158 @@ const ChatWidget = () => {
     scrollToBottom();
   }, [messages]);
 
-  const toggleChat = () => {
-    setIsOpen(!isOpen);
-  };
+  // 🔥 Kết nối WebSocket khi có roomId
+  useEffect(() => {
+    if (!roomId || !isOpen) return;
 
-  const handleSendMessage = (e) => {
-    e.preventDefault();
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const wsUrl = `${protocol}//127.0.0.1:8000/ws/chat/${roomId}/?token=${token}`;
     
-    if (inputMessage.trim() === "") return;
+    console.log("🔌 Connecting to WebSocket:", wsUrl);
+    
+    const ws = new WebSocket(wsUrl);
+    wsRef.current = ws;
 
-    const userMessage = {
-      id: messages.length + 1,
-      text: inputMessage,
-      sender: "user",
-      timestamp: new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })
+    ws.onopen = () => {
+      console.log("✅ WebSocket connected");
+      setWsConnected(true);
     };
 
-    setMessages([...messages, userMessage]);
-    setInputMessage("");
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      console.log("📩 Received message:", data);
 
-    setTimeout(() => {
-      const botResponse = getBotResponse(inputMessage);
-      const botMessage = {
-        id: messages.length + 2,
-        text: botResponse,
-        sender: "bot",
-        timestamp: new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })
+      const newMsg = {
+        id: Date.now() + Math.random(), // Tránh trùng ID
+        text: data.message,
+        sender: data.sender === "admin" ? "bot" : "user",
+        timestamp: data.time || new Date().toLocaleTimeString("vi-VN", {
+          hour: "2-digit",
+          minute: "2-digit"
+        })
       };
-      setMessages(prev => [...prev, botMessage]);
-    }, 1000);
-  };
 
-  const getBotResponse = (message) => {
-    const lowerMessage = message.toLowerCase();
+      // Chỉ thêm message nếu chưa tồn tại (tránh duplicate)
+      setMessages(prev => {
+        const exists = prev.some(msg => 
+          msg.text === newMsg.text && 
+          Math.abs(msg.id - newMsg.id) < 1000
+        );
+        return exists ? prev : [...prev, newMsg];
+      });
+    };
 
-    if (lowerMessage.includes("giá") || lowerMessage.includes("bao nhiêu")) {
-      return "Giá sản phẩm của chúng tôi dao động từ 200.000đ - 2.000.000đ. Bạn muốn xem sản phẩm nào cụ thể?";
-    } else if (lowerMessage.includes("giao hàng") || lowerMessage.includes("ship")) {
-      return "Chúng tôi có chính sách giao hàng toàn quốc. Thời gian giao hàng từ 2-5 ngày làm việc. Miễn phí ship cho đơn hàng trên 500.000đ!";
-    } else if (lowerMessage.includes("đổi trả")) {
-      return "Chúng tôi hỗ trợ đổi trả trong vòng 7 ngày kể từ ngày nhận hàng. Sản phẩm phải còn nguyên vẹn và chưa qua sử dụng.";
-    } else if (lowerMessage.includes("thanh toán")) {
-      return "Chúng tôi chấp nhận thanh toán qua: Tiền mặt khi nhận hàng (COD), Chuyển khoản ngân hàng, Ví điện tử (MoMo, ZaloPay).";
-    } else if (lowerMessage.includes("size") || lowerMessage.includes("cỡ")) {
-      return "Chúng tôi có đầy đủ các size từ S đến XXL. Bạn có thể tham khảo bảng size trên trang sản phẩm hoặc liên hệ trực tiếp để được tư vấn.";
-    } else if (lowerMessage.includes("chào") || lowerMessage.includes("hello") || lowerMessage.includes("hi")) {
-      return "Xin chào! Rất vui được hỗ trợ bạn. Bạn cần tư vấn về sản phẩm nào?";
-    } else if (lowerMessage.includes("cảm ơn") || lowerMessage.includes("thanks")) {
-      return "Rất hân hạnh được phục vụ bạn! Chúc bạn mua sắm vui vẻ! 😊";
-    } else {
-      return "Cảm ơn bạn đã liên hệ! Đội ngũ hỗ trợ sẽ phản hồi sớm nhất có thể. Bạn có thể gọi hotline: 1900-xxxx để được hỗ trợ nhanh hơn.";
+    ws.onerror = (error) => {
+      console.error("❌ WebSocket error:", error);
+      setWsConnected(false);
+    };
+
+    ws.onclose = () => {
+      console.log("🔌 WebSocket disconnected");
+      setWsConnected(false);
+    };
+
+    // Cleanup khi unmount hoặc roomId thay đổi
+    return () => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.close();
+      }
+    };
+  }, [roomId, isOpen, token]);
+
+  const loadMessages = async () => {
+    try {
+      setLoading(true);
+
+      const { data } = await axios.get("http://127.0.0.1:8000/chat/messages/", {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      setRoomId(data.room_id);
+
+      const history = data.messages.map(m => ({
+        id: m.id,
+        text: m.message,
+        sender: m.sender_role === "admin" ? "bot" : "user",
+        timestamp: new Date(m.created_at).toLocaleTimeString("vi-VN", {
+          hour: "2-digit",
+          minute: "2-digit"
+        })
+      }));
+
+      setMessages(history);
+    } catch (err) {
+      console.error("❌ Load chat failed:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const quickReplies = [
-    "Chính sách giao hàng",
-    "Chính sách đổi trả",
-    "Phương thức thanh toán",
-    "Hướng dẫn chọn size"
-  ];
+  // Toggle mở widget → load tin nhắn
+  const toggleChat = async () => {
+    const newState = !isOpen;
+    setIsOpen(newState);
 
-  const handleQuickReply = (reply) => {
-    setInputMessage(reply);
+    if (newState) {
+      await loadMessages();
+    } else {
+      // Đóng WebSocket khi đóng chat
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        wsRef.current.close();
+      }
+      setWsConnected(false);
+    }
+  };
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!inputMessage.trim()) return;
+
+    const text = inputMessage.trim();
+    setInputMessage("");
+
+    // 🔥 Ưu tiên gửi qua WebSocket
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        message: text
+      }));
+      console.log("📤 Sent via WebSocket:", text);
+    } else {
+      // ⚠️ Fallback: Nếu WebSocket chưa kết nối, dùng HTTP
+      console.warn("⚠️ WebSocket not connected, using HTTP fallback");
+      
+      const tempMsg = {
+        id: Date.now(),
+        text: text,
+        sender: "user",
+        timestamp: new Date().toLocaleTimeString("vi-VN", {
+          hour: "2-digit",
+          minute: "2-digit"
+        })
+      };
+
+      setMessages(prev => [...prev, tempMsg]);
+
+      try {
+        await axios.post(
+          `http://127.0.0.1:8000/chat/room/${roomId}/send/`,
+          { message: text },
+          { 
+            headers: {
+              Authorization: `Bearer ${token}`
+            } 
+          }
+        );
+      } catch (err) {
+        console.error("❌ Send failed:", err);
+      }
+    }
   };
 
   const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage(e);
     }
@@ -98,8 +182,8 @@ const ChatWidget = () => {
 
   return (
     <>
-      {/* Chat Icon Button */}
-      <div 
+      {/* ICON BUTTON */}
+      <div
         className={`chat-icon position-fixed rounded-circle d-flex align-items-center justify-content-center ${isOpen ? "d-none" : ""}`}
         onClick={toggleChat}
         style={{
@@ -111,29 +195,15 @@ const ChatWidget = () => {
           color: "white",
           cursor: "pointer",
           boxShadow: "0 4px 12px rgba(231, 4, 99, 0.4)",
-          transition: "all 0.3s ease",
           zIndex: 999
         }}
       >
         <FaComments size={28} />
-        <span 
-          className="position-absolute bg-danger text-white rounded-circle d-flex align-items-center justify-content-center fw-bold"
-          style={{
-            top: "-5px",
-            right: "-5px",
-            width: "24px",
-            height: "24px",
-            fontSize: "12px",
-            border: "2px solid white"
-          }}
-        >
-          1
-        </span>
       </div>
 
-      {/* Chat Window */}
+      {/* CHAT WINDOW */}
       {isOpen && (
-        <div 
+        <div
           className="chat-window position-fixed bg-white rounded-4 shadow-lg d-flex flex-column"
           style={{
             bottom: "30px",
@@ -144,114 +214,81 @@ const ChatWidget = () => {
             overflow: "hidden"
           }}
         >
-          {/* Header */}
-          <div 
+          {/* HEADER */}
+          <div
             className="chat-header text-white p-3 d-flex justify-content-between align-items-center"
-            style={{
-              background: "linear-gradient(135deg, #e70463 0%, #ff1744 100%)"
-            }}
+            style={{ background: "linear-gradient(135deg, #e70463 0%, #ff1744 100%)" }}
           >
             <div className="d-flex align-items-center gap-3">
-              <div 
+              <div
                 className="rounded-circle d-flex align-items-center justify-content-center"
-                style={{
-                  width: "40px",
-                  height: "40px",
-                  background: "rgba(255, 255, 255, 0.2)"
-                }}
+                style={{ width: "40px", height: "40px", background: "rgba(255,255,255,0.2)" }}
               >
                 <FaUser />
               </div>
               <div>
                 <h6 className="mb-0 fw-semibold">Hỗ trợ khách hàng</h6>
-                <small style={{ opacity: 0.9 }}>● Online</small>
+                <small>
+                  {wsConnected ? "● Online" : "○ Đang kết nối..."}
+                </small>
               </div>
             </div>
-            <button 
-              className="btn btn-link text-white p-0 rounded-circle d-flex align-items-center justify-content-center"
-              onClick={toggleChat}
-              style={{ 
-                textDecoration: "none",
-                width: "30px",
-                height: "30px",
-                minWidth: "30px",
-                transition: "all 0.3s ease"
-              }}
-            >
+
+            <button className="btn btn-link text-white p-0" onClick={toggleChat}>
               <FaTimes size={18} />
             </button>
           </div>
 
-          {/* Messages */}
-          <div 
-            className="chat-messages flex-grow-1 p-3 overflow-auto"
-            style={{ background: "#f8f9fa" }}
-          >
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`d-flex mb-3 ${message.sender === "user" ? "justify-content-end" : "justify-content-start"}`}
-              >
-                <div 
-                  className={`rounded-4 p-3 ${message.sender === "user" ? "text-white" : "bg-white shadow-sm"}`}
-                  style={{
-                    maxWidth: "75%",
-                    background: message.sender === "user" ? "#e70463" : "white",
-                    borderBottomLeftRadius: message.sender === "bot" ? "4px" : "16px",
-                    borderBottomRightRadius: message.sender === "user" ? "4px" : "16px"
-                  }}
+          {/* MESSAGES */}
+          <div className="chat-messages flex-grow-1 p-3 overflow-auto" style={{ background: "#f8f9fa" }}>
+            {loading ? (
+              <p className="text-center text-muted mt-3">Đang tải tin nhắn...</p>
+            ) : messages.length === 0 ? (
+              <p className="text-center text-muted mt-3">Chưa có tin nhắn nào</p>
+            ) : (
+              messages.map(msg => (
+                <div
+                  key={msg.id}
+                  className={`d-flex mb-3 ${msg.sender === "user" ? "justify-content-end" : "justify-content-start"}`}
                 >
-                  <p className="mb-1" style={{ fontSize: "14px", lineHeight: 1.5 }}>
-                    {message.text}
-                  </p>
-                  <small style={{ fontSize: "11px", opacity: 0.7 }}>
-                    {message.timestamp}
-                  </small>
-                </div>
-              </div>
-            ))}
-            <div ref={messagesEndRef} />
-
-            {/* Quick Replies */}
-            {messages.length <= 2 && (
-              <div className="mt-3">
-                <p className="text-muted mb-2" style={{ fontSize: "12px" }}>
-                  Câu hỏi thường gặp:
-                </p>
-                {quickReplies.map((reply, index) => (
-                  <button
-                    key={index}
-                    className="btn btn-outline-secondary btn-sm w-100 mb-2 text-start rounded-pill"
-                    onClick={() => handleQuickReply(reply)}
-                    style={{ fontSize: "13px" }}
+                  <div
+                    className={`rounded-4 p-3 ${msg.sender === "user" ? "text-white" : "bg-white shadow-sm"}`}
+                    style={{
+                      maxWidth: "75%",
+                      background: msg.sender === "user" ? "#e70463" : "white"
+                    }}
                   >
-                    {reply}
-                  </button>
-                ))}
-              </div>
+                    <p className="mb-1" style={{ wordBreak: "break-word" }}>{msg.text}</p>
+                    <small style={{ opacity: 0.7 }}>{msg.timestamp}</small>
+                  </div>
+                </div>
+              ))
             )}
+
+            <div ref={messagesEndRef} />
           </div>
 
-          {/* Input */}
+          {/* INPUT */}
           <div className="border-top p-3 bg-white d-flex gap-2">
             <input
-              type="text"
               className="form-control rounded-pill"
               placeholder="Nhập tin nhắn..."
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyPress={handleKeyPress}
-              style={{ fontSize: "14px" }}
+              disabled={!wsConnected && !roomId}
             />
-            <button 
-              className="btn btn-primary rounded-circle d-flex align-items-center justify-content-center"
+
+            <button
+              className="btn rounded-circle d-flex align-items-center justify-content-center"
               onClick={handleSendMessage}
-              style={{
-                width: "44px",
-                height: "44px",
-                background: "#e70463",
-                border: "none",
-                transition: "all 0.3s ease"
+              disabled={!inputMessage.trim() || (!wsConnected && !roomId)}
+              style={{ 
+                width: "44px", 
+                height: "44px", 
+                background: "#e70463", 
+                color: "white",
+                opacity: (!inputMessage.trim() || (!wsConnected && !roomId)) ? 0.5 : 1
               }}
             >
               <IoSend size={20} />

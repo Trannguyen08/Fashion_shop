@@ -55,8 +55,18 @@ INSTALLED_APPS = [
     'cloudinary',
     'channels',
     'chat',
-    'reviews'
+    'reviews',
+    'django_rq',
+    'voucher'
 ]
+
+#email config
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'your-email@gmail.com'
+EMAIL_HOST_PASSWORD = 'your-app-password'
 
 ASGI_APPLICATION = 'backend.asgi.application'
 
@@ -103,6 +113,20 @@ cloudinary.config(
     secure=True
 )
 
+# settings.py
+VNPAY_TMN_CODE = config('VNPAY_TMN_CODE')
+VNPAY_HASH_SECRET = config('VNPAY_HASH_SECRET')
+VNPAY_PAYMENT_URL = config('VNPAY_PAYMENT_URL')
+VNPAY_RETURN_URL = config('VNPAY_RETURN_URL')
+
+# REDIS QUEUE
+RQ_QUEUES = {
+    'default': {
+        'HOST': 'localhost',
+        'PORT': 6379,
+        'DB': 0,
+    }
+}
 
 AUTH_USER_MODEL = 'accounts.Account'
 

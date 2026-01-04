@@ -42,27 +42,73 @@
 .status-wrap {
   display: flex;
   gap: 6px;
+  align-items: center;
 }
 
 .status-badge-new {
-  padding: 6px 12px;
+  padding: 5px 10px;
   border-radius: 8px;
   font-size: 12px;
   font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+}
+
+.status-badge-new:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 6px rgba(0,0,0,0.15);
 }
 
 .order-card {
     border: 1px solid #f30000;
     border-radius: 5px !important;
 }
-/* Ship status */
-.ship-pending { background: #fff3cd; color: #856404; }
-.ship-delivering { background: #cfe2ff; color: #0d6efd; }
-.ship-shipped { background: #d4edda; color: #155724; }
 
-/* Payment status */
-.pay-paid { background: #d4edda; color: #155724; }
-.pay-unpaid { background: #f8d7da; color: #721c24; }
+/* ===== SHIP STATUS COLORS ===== */
+.ship-Pending { 
+  background: linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%);
+  color: #856404;
+  border: 1px solid #ffc107;
+}
+
+.ship-Processing { 
+  background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+  color: #0c5460;
+  border: 1px solid #17a2b8;
+}
+
+.ship-Delivering { 
+  background: linear-gradient(135deg, #cfe2ff 0%, #9ec5fe 100%);
+  color: #084298;
+  border: 1px solid #0d6efd;
+}
+
+.ship-Delivered { 
+  background: linear-gradient(135deg, #d1e7dd 0%, #a3cfbb 100%);
+  color: #0f5132;
+  border: 1px solid #198754;
+}
+
+.ship-Cancelled { 
+  background: linear-gradient(135deg, #f8d7da 0%, #f1aeb5 100%);
+  color: #842029;
+  border: 1px solid #dc3545;
+}
+
+/* ===== PAYMENT STATUS COLORS ===== */
+.pay-Paid { 
+  background: linear-gradient(135deg, #d1e7dd 0%, #a3cfbb 100%);
+  color: #0f5132;
+  border: 1px solid #198754;
+}
+
+.pay-Pending { 
+  background: linear-gradient(135deg, #f8d7da 0%, #f1aeb5 100%);
+  color: #842029;
+  border: 1px solid #dc3545;
+}
 
 /* ITEMS NEW */
 .order-items-new {

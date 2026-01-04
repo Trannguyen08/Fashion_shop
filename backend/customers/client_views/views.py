@@ -1,15 +1,16 @@
 from django.core.cache import cache
 from django.http import JsonResponse
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-
-from .serializers import CustomerAddressSerializer
-from .models import CustomerAddress
+from customers.serializers import CustomerAddressSerializer
+from customers.models import CustomerAddress
 from accounts.models import Account
 
 
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def add_address(request, account_id):
     try:
         account = Account.objects.get(id=account_id)
@@ -43,6 +44,7 @@ def add_address(request, account_id):
 
 
 @api_view(['PUT'])
+@permission_classes([IsAuthenticated])
 def update_address(request, address_id):
     try:
         address = CustomerAddress.objects.get(id=address_id)
@@ -72,6 +74,7 @@ def update_address(request, address_id):
 
 
 @api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
 def delete_address(request, address_id):
     try:
         address = CustomerAddress.objects.get(id=address_id)
@@ -85,6 +88,7 @@ def delete_address(request, address_id):
 
 
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def get_all_address(request, account_id):
     try:
         KEY = f"all_address_{account_id}"

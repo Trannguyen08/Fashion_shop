@@ -36,13 +36,7 @@ const ProductDetail = ({ product }) => {
   const fetchReviews = async (productId) => {
     setLoadingReviews(true);
     try {
-      const response = await axios.get(`http://127.0.0.1:8000/review/all-reviews/${productId}/`,
-        {
-          headers: {
-            'Authorization': 'Bearer ' + localStorage.getItem('accessToken')
-          }
-        }
-      );
+      const response = await axios.get(`http://127.0.0.1:8000/review/all-reviews/${productId}/`);
       console.log('Fetched reviews:', response.data);
       setReviews(response.data.data || []);
     } catch (error) {
